@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--admin">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <nav class="sidebar__nav">
+
+  <a href="{{ url_for('dashboard') }}"
+     class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    <span>Overview</span>
+  </a>
+
+  <a href="{{ url_for('admin_users') }}"
+     class="nav-item {% if request.endpoint == 'admin_users' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    <span>Users</span>
+  </a>
+
+
+
+
+
+  <a href="{{ url_for('admin_profile') }}"
+     class="nav-item {% if request.endpoint == 'admin_profile' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+    <span>My Profile</span>
+  </a>
+
+</nav>
+    
+<!-- Sidebar Platform Health -->
+<div class="sidebar-health">
+
+  <div class="sidebar-health__title">
+    Platform Health
+  </div>
+
+  <div class="sidebar-health__rate">
+    {{ health_pct }}%
+    <span>Success Rate</span>
+  </div>
+
+  <div class="sidebar-health__progress">
+    <div class="sidebar-health__bar"
+         style="width:{{ health_pct }}%">
+    </div>
+  </div>
+
+  <div class="sidebar-health__stats">
+    <div>
+      <strong>{{ total_services }}</strong>
+      <span>Services</span>
+    </div>
+
+    <div>
+      <strong>{{ completed_bookings }}</strong>
+      <span>Completed</span>
+    </div>
+
+    <div>
+      <strong>{{ pending_bookings }}</strong>
+      <span>Pending</span>
+    </div>
+  </div>
+
+</div>
+
+
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--admin">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Admin</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Hi, <strong>{{ current_user.username }}</strong> 👋</p>
+        <h2 class="page-header__title">Admin Dashboard</h2>
+      </div>
+      <div class="page-header__right">
+        <span class="badge badge--admin">Administrator</span>
+      </div>
+    </header>
+
+    <!-- ── Premium KPI Cards ───────────────────────────── -->
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+
+  <!-- Total Users -->
+  <div class="stat-card stat-card--accent">
+    <span class="stat-card__label">Total Users</span>
+    <span class="stat-card__value">{{ total_users }}</span>
+    <div class="adm-sub">
+      {{ total_clients }} Clients • {{ total_freelancers }} Freelancers
+    </div>
+  </div>
+
+  <!-- Freelancers -->
+  <div class="stat-card">
+    <span class="stat-card__label">Freelancers</span>
+    <span class="stat-card__value">{{ total_freelancers }}</span>
+    <div class="adm-sub">
+      {{ freelancer_pct }}% of platform users
+    </div>
+  </div>
+
+  <!-- Bookings -->
+  <div class="stat-card">
+    <span class="stat-card__label">Total Bookings</span>
+    <span class="stat-card__value">{{ total_bookings }}</span>
+    <div class="adm-sub">
+      {{ completed_bookings }} completed jobs
+    </div>
+  </div>
+
+  <!-- Revenue -->
+  <div class="stat-card stat-card--accent">
+    <span class="stat-card__label">Platform Revenue</span>
+    <span class="stat-card__value">
+      ₹{{ "%.0f"|format(total_revenue) }}
+    </span>
+    <div class="adm-sub">
+      Success Rate {{ health_pct }}%
+    </div>
+  </div>
+
+</div>
+
+    <!-- ── Row 3: Breakdown + Quick Actions ──────────────────────────────── -->
+    <div class="adm-two-col adm-two-col--main" style="margin-top:24px">
+
+      <!-- Booking status bars -->
+      <div class="table-card" style="padding:20px 22px">
+        <div class="section-header" style="margin-bottom:18px;padding:0;border:none">
+          <h3 class="section-title" style="font-size:.9rem">Booking Status Breakdown</h3>
+        </div>
+        {% set labels = ['Pending','Active','Completed','Cancelled'] %}
+        {% set colors = ['#c9a76a','#2a9d8f','#5b8dee','#e55'] %}
+        {% for i in range(4) %}
+          <!-- FIX: use pre-computed booking_pcts[i] instead of dividing in Jinja -->
+          <div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+              <span style="font-size:.82rem;color:var(--text-2)">{{ labels[i] }}</span>
+              <span style="font-size:.82rem;font-weight:600;color:var(--text)">
+                {{ booking_stats[i] }}
+                <span style="color:var(--text-3);font-weight:400">({{ booking_pcts[i] }}%)</span>
+              </span>
+            </div>
+            <div style="height:7px;background:var(--bg-3);border-radius:99px;overflow:hidden">
+              <div style="height:100%;width:{{ booking_pcts[i] }}%;background:{{ colors[i] }};border-radius:99px;transition:width .6s"></div>
+            </div>
+          </div>
+        {% endfor %}
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between">
+          <span style="font-size:.78rem;color:var(--text-2)">Total Bookings</span>
+          <span style="font-weight:700;color:var(--accent)">{{ total_b }}</span>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="table-card" style="padding:20px 22px">
+        <div class="section-header" style="margin-bottom:18px;padding:0;border:none">
+          <h3 class="section-title" style="font-size:.9rem">Quick Actions</h3>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+
+          <a href="{{ url_for('admin_users') }}" class="adm-action">
+            <div class="adm-action__icon" style="background:rgba(91,141,238,.12);color:#5b8dee">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:.87rem;color:var(--text)">Manage Users</div>
+              <div style="font-size:.75rem;color:var(--text-2)">View, edit or deactivate accounts</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" style="margin-left:auto;color:var(--text-3);flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="{{ url_for('admin_users') }}" class="adm-action">
+            <div class="adm-action__icon" style="background:rgba(78,205,196,.12);color:#4ecdc4">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:.87rem;color:var(--text)">View Freelancers</div>
+              <div style="font-size:.75rem;color:var(--text-2)">{{ total_freelancers }} registered freelancers</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" style="margin-left:auto;color:var(--text-3);flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="{{ url_for('admin_users') }}" class="adm-action">
+            <div class="adm-action__icon" style="background:rgba(201,167,106,.12);color:var(--accent)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:.87rem;color:var(--text)">View Clients</div>
+              <div style="font-size:.75rem;color:var(--text-2)">{{ total_clients }} registered clients</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" style="margin-left:auto;color:var(--text-3);flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+
+          <a href="{{ url_for('admin_profile') }}" class="adm-action">
+            <div class="adm-action__icon" style="background:rgba(229,85,85,.1);color:#e55">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:.87rem;color:var(--text)">Admin Settings</div>
+              <div style="font-size:.75rem;color:var(--text-2)">Manage your admin profile</div>
+            </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" style="margin-left:auto;color:var(--text-3);flex-shrink:0"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Row 4: Recent Bookings + Recent Signups ────────────────────────── -->
+    <div class="adm-two-col adm-two-col--3-2" style="margin-top:24px">
+
+      <!-- Recent Bookings -->
+      <div class="table-card">
+        <div class="section-header" style="padding:18px 20px 0;border:none">
+          <h3 class="section-title" style="font-size:.9rem">Recent Bookings</h3>
+          <a href="{{ url_for('admin_users') }}" class="btn btn--outline btn--sm" style="font-size:.72rem">View All</a>
+        </div>
+        {% if recent_bookings %}
+        <div class="table-wrap">
+          <table class="data-table" style="font-size:.82rem">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Service</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in recent_bookings %}
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar avatar--client avatar--xs">{{ b.client.username[0].upper() }}</div>
+                    <span>{{ b.client.username }}</span>
+                  </div>
+                </td>
+                <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.service.title }}</td>
+                <td style="color:var(--accent);font-weight:600">₹{{ "%.0f"|format(b.amount) }}</td>
+                <td>
+                  <span class="status-badge status-badge--{{ b.status }}" style="font-size:.68rem;padding:2px 8px">
+                    {{ b.status | capitalize }}
+                  </span>
+                </td>
+                <td class="td--date" style="font-size:.75rem">{{ b.created_at.strftime('%d %b') }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div style="padding:32px;text-align:center;color:var(--text-3);font-size:.85rem">No bookings yet</div>
+        {% endif %}
+      </div>
+
+  
+<!-- Recent Signups -->
+<div class="table-card" style="padding:0">
+  
+  <div class="section-header"
+       style="padding:22px 24px 14px;border:none">
+    <h3 class="section-title" style="font-size:.95rem">
+      Recent Signups
+    </h3>
+  </div>
+
+  <div style="padding:8px 22px 18px">
+
+    {% if recent_users %}
+      {% for u in recent_users %}
+
+      <div style="
+        display:flex;
+        align-items:center;
+        gap:14px;
+        padding:14px 0;
+        {{ 'border-bottom:1px solid var(--border)' if not loop.last }}
+      ">
+
+        <!-- Avatar -->
+        <div class="avatar avatar--{{ u.role }} avatar--xs">
+          {{ u.username[0].upper() }}
+        </div>
+
+        <!-- User Info -->
+        <div style="flex:1;min-width:0">
+          <div style="
+            font-weight:600;
+            font-size:.88rem;
+            color:var(--text);
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+          ">
+            {{ u.full_name }}
+          </div>
+
+          <div style="
+            font-size:.75rem;
+            color:var(--text-2);
+            margin-top:2px;
+          ">
+            @{{ u.username }}
+          </div>
+        </div>
+
+        <!-- Role + Date -->
+        <div style="
+          text-align:right;
+          flex-shrink:0;
+          min-width:85px;
+        ">
+
+          <div style="
+            font-size:.7rem;
+            padding:4px 10px;
+            border-radius:999px;
+            font-weight:600;
+
+            {% if u.role == 'client' %}
+              background:rgba(91,141,238,.12);
+              color:#5b8dee;
+            {% else %}
+              background:rgba(78,205,196,.12);
+              color:#4ecdc4;
+            {% endif %}
+          ">
+            {{ u.role | capitalize }}
+          </div>
+
+          <div style="
+            font-size:.72rem;
+            color:var(--text-3);
+            margin-top:6px
+          ">
+            {{ u.created_at.strftime('%d %b') }}
+          </div>
+
+        </div>
+      </div>
+
+      {% endfor %}
+
+    {% else %}
+
+    <div style="
+      padding:32px 0;
+      text-align:center;
+      color:var(--text-3);
+      font-size:.9rem;
+    ">
+      No users yet
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
+
+
+
+<style>
+
+/* Sidebar Health Widget */
+.sidebar-health{
+  margin:18px 18px 14px;
+  padding:18px;
+  border-radius:18px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.02);
+}
+
+.sidebar-health__title{
+  font-size:.7rem;
+  font-weight:700;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--text-3);
+  margin-bottom:10px;
+}
+
+.sidebar-health__rate{
+  font-size:1.5rem;
+  font-weight:700;
+  color:var(--accent);
+  margin-bottom:14px;
+}
+
+.sidebar-health__rate span{
+  display:block;
+  font-size:.75rem;
+  font-weight:500;
+  color:var(--text-2);
+  margin-top:2px;
+}
+
+.sidebar-health__progress{
+  height:8px;
+  border-radius:999px;
+  overflow:hidden;
+  background:var(--bg-3);
+  margin-bottom:16px;
+}
+
+.sidebar-health__bar{
+  height:100%;
+  background:var(--accent);
+  border-radius:999px;
+}
+
+.sidebar-health__stats{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.sidebar-health__stats div{
+  text-align:center;
+}
+
+.sidebar-health__stats strong{
+  display:block;
+  color:var(--text);
+  font-size:1rem;
+}
+
+.sidebar-health__stats span{
+  font-size:.68rem;
+  color:var(--text-3);
+}
+
+.adm-sub { font-size:.7rem; color:var(--text-3); margin-top:4px; }
+.adm-two-col {
+  display:grid;
+  gap:24px;
+}
+
+.adm-two-col--main{
+  grid-template-columns:1.6fr .9fr;
+}
+
+.adm-two-col--3-2{
+  grid-template-columns:1.45fr .95fr;
+}
+.adm-two-col--3-2 { grid-template-columns:3fr 2fr; }
+.adm-action {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px; border-radius:10px;
+  border:1px solid var(--border); background:var(--bg-3);
+  text-decoration:none;
+  transition:border-color .2s, background .2s, transform .15s;
+}
+.adm-action:hover {
+  border-color:var(--accent);
+  background:rgba(201,167,106,.05);
+  transform:translateX(3px);
+}
+.adm-action__icon {
+  width:36px; height:36px; border-radius:9px;
+  display:grid; place-items:center; flex-shrink:0;
+}
+@media (max-width:768px) {
+  .adm-two-col, .adm-two-col--3-2 { grid-template-columns:1fr; }
+}
+</style>
+{% endblock %}

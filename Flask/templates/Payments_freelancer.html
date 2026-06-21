@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}Earnings & Payments — WorkSphere{% endblock %}
+
+{% block extra_css %}
+<style>
+.pay-summary-bar { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+.pay-stat { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px 24px; position:relative; overflow:hidden; transition:border-color var(--trans); }
+.pay-stat:hover { border-color:var(--freelancer); }
+.pay-stat__label { font-size:.72rem; font-weight:500; color:var(--text-2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; display:block; }
+.pay-stat__value { font-size:1.7rem; font-weight:700; color:var(--text); font-family:'Cormorant Garamond',serif; line-height:1; display:block; }
+.pay-stat--accent .pay-stat__value { color:var(--freelancer); }
+.pay-stat__icon { position:absolute; right:18px; top:50%; transform:translateY(-50%); opacity:.1; }
+.pay-stat--accent::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at top right,rgba(78,205,196,.09) 0%,transparent 60%); pointer-events:none; }
+.pay-stat--pending .pay-stat__value { color:var(--accent); }
+.pay-stat--pending::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at top right,rgba(201,167,106,.07) 0%,transparent 60%); pointer-events:none; }
+.pay-section-title { font-size:.68rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--text-2); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.pay-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Earnings progress card */
+.earnings-hero { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px 28px; margin-bottom:32px; display:flex; align-items:center; gap:28px; flex-wrap:wrap; overflow:hidden; position:relative; }
+.earnings-hero::before { content:''; position:absolute; width:280px; height:280px; border-radius:50%; background:radial-gradient(circle,rgba(78,205,196,.07) 0%,transparent 70%); right:-60px; top:-80px; pointer-events:none; }
+.earnings-hero__main { flex:1; min-width:200px; }
+.earnings-hero__label { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:var(--text-2); margin-bottom:6px; }
+.earnings-hero__amount { font-size:2.4rem; font-weight:700; color:var(--freelancer); font-family:'Cormorant Garamond',serif; line-height:1; margin-bottom:4px; }
+.earnings-hero__sub { font-size:.78rem; color:var(--text-2); }
+.earnings-hero__divider { width:1px; height:60px; background:var(--border); flex-shrink:0; }
+.earnings-hero__stat { text-align:center; min-width:100px; }
+.earnings-hero__stat-value { font-size:1.2rem; font-weight:700; color:var(--text); font-family:'Cormorant Garamond',serif; display:block; margin-bottom:3px; }
+.earnings-hero__stat-label { font-size:.67rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-2); }
+
+/* Awaiting badge on hero */
+.awaiting-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:rgba(201,167,106,.1); border:1px solid rgba(201,167,106,.22); border-radius:20px; font-size:.75rem; font-weight:600; color:var(--accent); margin-top:10px; }
+
+/* Transaction list */
+.txn-card { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:14px 18px; display:flex; align-items:center; gap:14px; transition:border-color .15s; margin-bottom:9px; flex-wrap:wrap; }
+.txn-card:hover { border-color:rgba(78,205,196,.3); }
+.txn-card__icon-earn { width:40px; height:40px; border-radius:10px; background:rgba(78,205,196,.1); border:1px solid rgba(78,205,196,.18); display:grid; place-items:center; flex-shrink:0; color:#4ecdc4; }
+.txn-card__icon-pending { width:40px; height:40px; border-radius:10px; background:rgba(201,167,106,.1); border:1px solid rgba(201,167,106,.18); display:grid; place-items:center; flex-shrink:0; color:var(--accent); }
+.txn-card__info { flex:1; min-width:120px; }
+.txn-card__title { font-size:.87rem; font-weight:600; color:var(--text); margin-bottom:2px; }
+.txn-card__sub { font-size:.72rem; color:var(--text-2); display:flex; align-items:center; gap:5px; }
+.txn-card__txid { font-family:monospace; font-size:.71rem; color:var(--text-2); background:var(--bg-3); padding:3px 7px; border-radius:5px; border:1px solid var(--border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+.txn-earn-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; background:rgba(78,205,196,.1); color:#4ecdc4; border:1px solid rgba(78,205,196,.25); border-radius:20px; font-size:.67rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.txn-pending-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; background:rgba(201,167,106,.1); color:var(--accent); border:1px solid rgba(201,167,106,.25); border-radius:20px; font-size:.67rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.txn-amount-earn { font-size:1rem; font-weight:700; color:var(--freelancer); font-family:'Cormorant Garamond',serif; }
+.txn-amount-pending { font-size:1rem; font-weight:700; color:var(--accent); font-family:'Cormorant Garamond',serif; }
+.txn-date { font-size:.7rem; color:var(--text-2); text-align:right; }
+.empty-pay { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:52px 20px; text-align:center; gap:10px; background:var(--bg-2); border:1px dashed var(--border); border-radius:var(--radius-lg); }
+.empty-pay__icon { font-size:2.2rem; opacity:.4; }
+.filter-bar { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.filter-input-wrap { flex:1; min-width:180px; position:relative; }
+.filter-input-wrap svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--text-2); pointer-events:none; }
+.filter-input { width:100%; background:var(--bg-2); border:1px solid var(--border); border-radius:8px; padding:9px 11px 9px 34px; color:var(--text); font-size:.82rem; outline:none; transition:border-color .15s; }
+.filter-input:focus { border-color:var(--freelancer); }
+.filter-select { background:var(--bg-2); border:1px solid var(--border); border-radius:8px; padding:9px 13px; color:var(--text); font-size:.82rem; outline:none; cursor:pointer; }
+
+/* Payout method section */
+.payout-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px 24px; margin-bottom:32px; }
+.payout-card__title { font-size:.88rem; font-weight:600; color:var(--text); margin-bottom:4px; }
+.payout-card__sub { font-size:.75rem; color:var(--text-2); margin-bottom:18px; }
+.payout-method-row { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 16px; background:var(--bg-3); border:1px solid var(--border); border-radius:10px; flex-wrap:wrap; }
+.payout-method-info { display:flex; align-items:center; gap:12px; }
+.payout-method-icon { width:38px; height:38px; border-radius:8px; background:rgba(78,205,196,.1); border:1px solid rgba(78,205,196,.18); display:grid; place-items:center; color:#4ecdc4; flex-shrink:0; }
+.payout-method-name { font-size:.86rem; font-weight:600; color:var(--text); display:block; }
+.payout-method-detail { font-size:.74rem; color:var(--text-2); }
+.btn-outline { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:transparent; border:1px solid var(--freelancer); color:var(--freelancer); border-radius:7px; font-size:.78rem; font-weight:600; cursor:pointer; transition:background .15s,box-shadow .15s; }
+.btn-outline:hover { background:rgba(78,205,196,.08); box-shadow:0 2px 10px rgba(78,205,196,.15); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--freelancer">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <nav class="sidebar__nav">
+
+  <a href="{{ url_for('dashboard') }}"
+     class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    <span>Overview</span>
+  </a>
+
+  <a href="{{ url_for('add_service') }}"
+     class="nav-item {% if request.endpoint == 'add_service' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="16"/>
+      <line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    <span>Add Proposal</span>
+  </a>
+
+  <a href="{{ url_for('booking_requests') }}"
+     class="nav-item {% if request.endpoint == 'booking_requests' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    <span>Booking Requests</span>
+  </a>
+
+  <a href="{{ url_for('messages') }}"
+     class="nav-item {% if request.endpoint == 'messages' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span>Messages</span>
+
+    {% if unread_msgs > 0 %}
+    <span style="background:var(--admin);color:#fff;font-size:.6rem;
+      font-weight:700;padding:1px 5px;border-radius:999px;margin-left:4px">
+      {{ unread_msgs }}
+    </span>
+    {% endif %}
+  </a>
+
+  <a href="{{ url_for('payments') }}"
+     class="nav-item {% if request.endpoint == 'payments' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+    <span>Earnings</span>
+  </a>
+
+  <a href="{{ url_for('freelancer_profile') }}"
+     class="nav-item {% if request.endpoint == 'freelancer_profile' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20c2-4 6-6 8-6s6 2 8 6"/>
+    </svg>
+    <span>My Profile</span>
+  </a>
+
+</nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--freelancer">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Freelancer</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Track your income</p>
+        <h2 class="page-header__title">Earnings &amp; Payouts</h2>
+      </div>
+    </header>
+
+    <!-- Earnings Hero Card -->
+    <div class="earnings-hero">
+      <div class="earnings-hero__main">
+        <div class="earnings-hero__label">Total Lifetime Earnings</div>
+        <div class="earnings-hero__amount">₹{{ "%.2f"|format(total_earned) }}</div>
+        <div class="earnings-hero__sub">{{ my_payments | selectattr('status','equalto','paid') | list | length }} completed transaction(s)</div>
+        {% if pending_amt > 0 %}
+        <div class="awaiting-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ₹{{ "%.2f"|format(pending_amt) }} awaiting payment from clients
+        </div>
+        {% endif %}
+      </div>
+      <div class="earnings-hero__divider"></div>
+      <div class="earnings-hero__stat">
+        <span class="earnings-hero__stat-value">{{ my_payments | length }}</span>
+        <span class="earnings-hero__stat-label">Transactions</span>
+      </div>
+      <div class="earnings-hero__divider"></div>
+      <div class="earnings-hero__stat">
+        <span class="earnings-hero__stat-value" style="color:var(--accent)">₹{{ "%.2f"|format(pending_amt) }}</span>
+        <span class="earnings-hero__stat-label">Pending</span>
+      </div>
+      <div class="earnings-hero__divider"></div>
+      <div class="earnings-hero__stat">
+        <span class="earnings-hero__stat-value" style="color:var(--freelancer)">₹{{ "%.2f"|format(total_earned) }}</span>
+        <span class="earnings-hero__stat-label">Received</span>
+      </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="pay-summary-bar">
+      <div class="pay-stat pay-stat--accent">
+        <span class="pay-stat__label">Total Earned</span>
+        <span class="pay-stat__value">₹{{ "%.2f"|format(total_earned) }}</span>
+        <div class="pay-stat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="44" style="color:var(--freelancer)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      </div>
+      <div class="pay-stat pay-stat--pending">
+        <span class="pay-stat__label">Awaiting Payment</span>
+        <span class="pay-stat__value">₹{{ "%.2f"|format(pending_amt) }}</span>
+        <div class="pay-stat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="44" style="color:var(--accent)"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      </div>
+      <div class="pay-stat">
+        <span class="pay-stat__label">Transactions</span>
+        <span class="pay-stat__value">{{ my_payments | length }}</span>
+        <div class="pay-stat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="44" style="color:var(--text-2)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      </div>
+    </div>
+
+    <!-- Payout Method -->
+    <div class="pay-section-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Payout Method
+    </div>
+    <div class="payout-card" style="margin-bottom:28px">
+      <div class="payout-card__title">Where your earnings go</div>
+      <div class="payout-card__sub">Payouts are processed within 3–5 business days after client confirmation.</div>
+      <div class="payout-method-row">
+        <div class="payout-method-info">
+          <div class="payout-method-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div>
+            <span class="payout-method-name">Bank Account / UPI</span>
+            <span class="payout-method-detail">Linked to your registered profile</span>
+          </div>
+        </div>
+        <button class="btn-outline">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Update
+        </button>
+      </div>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="pay-section-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Payment History
+    </div>
+
+    {% if my_payments %}
+    <div class="filter-bar">
+      <div class="filter-input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="filter-input" id="txnSearch" placeholder="Search by service, client or transaction ID…" oninput="filterTxns()" style="--f-color:var(--freelancer)">
+      </div>
+      <select class="filter-select" id="txnSort" onchange="filterTxns()">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="highest">Highest Amount</option>
+        <option value="lowest">Lowest Amount</option>
+      </select>
+      <select class="filter-select" id="txnStatus" onchange="filterTxns()">
+        <option value="all">All Status</option>
+        <option value="paid">Received</option>
+        <option value="pending">Pending</option>
+      </select>
+    </div>
+
+    <div id="txnList">
+      {% for payment in my_payments %}
+      <div class="txn-card" data-service="{{ payment.booking.service.title }}" data-client="{{ payment.client.full_name }}" data-txid="{{ payment.transaction_id or '' }}" data-amount="{{ payment.amount }}" data-status="{{ payment.status }}" data-date="{{ payment.paid_at.strftime('%Y%m%d%H%M') if payment.paid_at else '0' }}">
+        {% if payment.status == 'paid' %}
+        <div class="txn-card__icon-earn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        {% else %}
+        <div class="txn-card__icon-pending">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        {% endif %}
+
+        <div class="txn-card__info">
+          <div class="txn-card__title">{{ payment.booking.service.title }}</div>
+          <div class="txn-card__sub">
+            <div class="avatar avatar--client avatar--xs">{{ payment.client.username[0].upper() }}</div>
+            {{ payment.client.full_name }}
+          </div>
+        </div>
+
+        <div class="txn-card__txid" title="{{ payment.transaction_id or '—' }}">{{ payment.transaction_id or '—' }}</div>
+
+        <div style="text-align:right">
+          <div class="{{ 'txn-amount-earn' if payment.status == 'paid' else 'txn-amount-pending' }}">₹{{ "%.2f"|format(payment.amount) }}</div>
+          <div class="txn-date">{{ payment.paid_at.strftime('%d %b %Y, %H:%M') if payment.paid_at else 'Pending' }}</div>
+        </div>
+
+        {% if payment.status == 'paid' %}
+        <span class="txn-earn-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9"><polyline points="20 6 9 17 4 12"/></svg>
+          Received
+        </span>
+        {% else %}
+        <span class="txn-pending-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="9"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Pending
+        </span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-pay">
+      <div class="empty-pay__icon">💰</div>
+      <h3 style="font-size:.9rem;font-weight:600">No earnings yet</h3>
+      <p style="font-size:.8rem;color:var(--text-2)">Once clients pay for your services, transactions will appear here.</p>
+      <a href="{{ url_for('dashboard') }}" class="btn btn--primary" style="margin-top:4px">Go to Dashboard</a>
+    </div>
+    {% endif %}
+  </main>
+</div>
+
+<script>
+function filterTxns(){
+  const q=document.getElementById('txnSearch').value.toLowerCase();
+  const s=document.getElementById('txnSort').value;
+  const st=document.getElementById('txnStatus').value;
+  const cards=Array.from(document.querySelectorAll('#txnList .txn-card'));
+  cards.forEach(c=>{
+    const txt=(c.dataset.service+c.dataset.client+c.dataset.txid).toLowerCase();
+    const statusOk = st==='all' || c.dataset.status===st;
+    c.style.display=(txt.includes(q)&&statusOk)?'':'none';
+  });
+  const list=document.getElementById('txnList');
+  const vis=cards.filter(c=>c.style.display!=='none');
+  vis.sort((a,b)=>{
+    if(s==='newest')return b.dataset.date.localeCompare(a.dataset.date);
+    if(s==='oldest')return a.dataset.date.localeCompare(b.dataset.date);
+    if(s==='highest')return parseFloat(b.dataset.amount)-parseFloat(a.dataset.amount);
+    return parseFloat(a.dataset.amount)-parseFloat(b.dataset.amount);
+  });
+  vis.forEach(c=>list.appendChild(c));
+}
+</script>
+{% endblock %}

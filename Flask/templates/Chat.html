@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}Chat with {{ other.username }} — WorkSphere{% endblock %}
+
+{% block extra_css %}
+<style>
+.chat-layout { display:flex; height:100vh; overflow:hidden; }
+
+/* Conversations sidebar */
+.conv-sidebar {
+  width:280px; flex-shrink:0;
+  background:var(--bg-2); border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+}
+.conv-sidebar__header {
+  padding:20px 20px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.conv-sidebar__back { color:var(--text-3); transition:color var(--trans); }
+.conv-sidebar__back:hover { color:var(--text); }
+.conv-sidebar__title { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:600; color:var(--text); }
+.conv-list { flex:1; overflow-y:auto; padding:8px 0; }
+.conv-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 18px; cursor:pointer; transition:background var(--trans);
+  text-decoration:none;
+}
+.conv-item:hover { background:var(--bg-3); }
+.conv-item--active { background:var(--bg-3); }
+.conv-item__info { flex:1; min-width:0; }
+.conv-item__name { font-size:.85rem; font-weight:500; color:var(--text); }
+.conv-item__last { font-size:.75rem; color:var(--text-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
+.conv-item__badge {
+  background:var(--accent); color:var(--bg);
+  font-size:.65rem; font-weight:700;
+  width:18px; height:18px; border-radius:50%;
+  display:grid; place-items:center; flex-shrink:0;
+}
+.conv-empty { padding:24px 18px; text-align:center; color:var(--text-3); font-size:.82rem; }
+
+/* Main chat area */
+.chat-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.chat-header {
+  padding:16px 24px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:14px;
+  background:var(--bg-2); flex-shrink:0;
+}
+.chat-header__info { flex:1; }
+.chat-header__name { font-size:.95rem; font-weight:600; color:var(--text); }
+.chat-header__role { font-size:.75rem; color:var(--text-3); }
+
+/* Service context banner */
+.service-banner {
+  background:var(--bg-3); border-bottom:1px solid var(--border);
+  padding:12px 24px; display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0;
+}
+.service-banner__info { font-size:.82rem; color:var(--text-2); }
+.service-banner__info strong { color:var(--text); }
+.service-banner__price { font-size:.9rem; font-weight:700; color:var(--accent); font-family:'Cormorant Garamond',serif; }
+
+/* Messages area */
+.chat-messages {
+  flex:1; overflow-y:auto; padding:24px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.msg { display:flex; gap:10px; max-width:72%; }
+.msg--sent { align-self:flex-end; flex-direction:row-reverse; }
+.msg--received { align-self:flex-start; }
+.msg__avatar {
+  width:30px; height:30px; border-radius:50%; flex-shrink:0;
+  display:grid; place-items:center; font-size:.75rem; font-weight:600;
+  align-self:flex-end;
+}
+.msg__bubble {
+  padding:10px 14px; border-radius:14px;
+  font-size:.85rem; line-height:1.5;
+}
+.msg--sent .msg__bubble {
+  background:var(--accent); color:var(--bg);
+  border-bottom-right-radius:4px;
+}
+.msg--received .msg__bubble {
+  background:var(--bg-3); color:var(--text);
+  border-bottom-left-radius:4px;
+}
+.msg__time { font-size:.65rem; color:var(--text-3); margin-top:4px; text-align:right; }
+.msg--received .msg__time { text-align:left; }
+
+/* Booking request card inside chat */
+.booking-card {
+  background:var(--bg-2); border:1px solid var(--border);
+  border-radius:12px; padding:16px; min-width:260px; max-width:320px;
+}
+.booking-card--sent { border-color:rgba(201,167,106,.3); }
+.booking-card__label { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-3); margin-bottom:8px; }
+.booking-card__title { font-size:.9rem; font-weight:600; color:var(--text); margin-bottom:4px; }
+.booking-card__price { font-size:1.1rem; font-weight:700; color:var(--accent); font-family:'Cormorant Garamond',serif; margin-bottom:12px; }
+.booking-card__actions { display:flex; gap:8px; }
+.booking-card__status { font-size:.78rem; font-weight:600; padding:4px 10px; border-radius:999px; }
+.status--pending   { background:rgba(201,167,106,.12); color:var(--accent);     border:1px solid rgba(201,167,106,.2); }
+.status--accepted  { background:rgba(78,205,196,.12);  color:var(--freelancer); border:1px solid rgba(78,205,196,.2); }
+.status--completed { background:rgba(91,141,238,.12);  color:var(--client);     border:1px solid rgba(91,141,238,.2); }
+.status--cancelled { background:rgba(224,92,92,.1);    color:#e05c5c;           border:1px solid rgba(224,92,92,.15); }
+
+/* Input area */
+.chat-input-area {
+  border-top:1px solid var(--border); background:var(--bg-2);
+  padding:16px 24px; flex-shrink:0;
+}
+.chat-input-row { display:flex; gap:10px; align-items:flex-end; }
+.chat-input {
+  flex:1; background:var(--bg-3); border:1px solid var(--border);
+  border-radius:12px; padding:10px 16px;
+  font-size:.88rem; color:var(--text); font-family:inherit;
+  outline:none; resize:none; max-height:120px; min-height:42px;
+  transition:border-color var(--trans);
+  line-height:1.4;
+}
+.chat-input::placeholder { color:var(--text-3); }
+.chat-input:focus { border-color:var(--accent); }
+.chat-send-btn {
+  background:var(--accent); color:var(--bg);
+  border:none; border-radius:10px; padding:10px 18px;
+  font-size:.85rem; font-weight:600; cursor:pointer;
+  transition:all var(--trans); white-space:nowrap;
+  display:flex; align-items:center; gap:6px;
+}
+.chat-send-btn:hover { background:var(--accent-2); }
+
+/* Booking request button */
+.booking-request-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--bg-3); border-radius:10px; padding:10px 14px;
+  margin-bottom:10px; border:1px solid rgba(201,167,106,.15);
+}
+.booking-request-bar__info { font-size:.8rem; color:var(--text-2); }
+.booking-request-bar__info strong { color:var(--accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-layout">
+
+  <!-- Conversations sidebar -->
+  <div class="conv-sidebar">
+    <div class="conv-sidebar__header">
+      <a href="{{ url_for('dashboard') }}" class="conv-sidebar__back" title="Back to Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </a>
+      <span class="conv-sidebar__title">Messages</span>
+    </div>
+    <div class="conv-list">
+      {% if conversations %}
+        {% for c in conversations %}
+        <a href="{{ url_for('chat', other_id=c.user.id) }}"
+           class="conv-item {% if c.user.id == other.id %}conv-item--active{% endif %}">
+          <div class="avatar avatar--{{ c.user.role }}" style="width:36px;height:36px;font-size:.85rem;flex-shrink:0">
+            {{ c.user.username[0].upper() }}
+          </div>
+          <div class="conv-item__info">
+            <div class="conv-item__name">{{ c.user.username }}</div>
+            <div class="conv-item__last">{{ c.last.content[:30] }}{% if c.last.content|length > 30 %}…{% endif %}</div>
+          </div>
+          {% if c.unread > 0 %}
+          <div class="conv-item__badge">{{ c.unread }}</div>
+          {% endif %}
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="conv-empty">No conversations yet</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Chat main -->
+  <div class="chat-main">
+
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="avatar avatar--{{ other.role }}" style="width:38px;height:38px;font-size:.9rem">
+        {{ other.username[0].upper() }}
+      </div>
+      <div class="chat-header__info">
+        <div class="chat-header__name">{{ other.full_name }}</div>
+        <div class="chat-header__role">{{ other.role | capitalize }}</div>
+      </div>
+    </div>
+
+    <!-- Service context banner -->
+    {% if service %}
+    <div class="service-banner">
+      <div class="service-banner__info">
+        Discussing: <strong>{{ service.title }}</strong>
+        <span style="margin-left:8px;color:var(--text-3)">{{ service.category }}</span>
+      </div>
+      <div class="service-banner__price">₹{{ "%.2f"|format(service.price) }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chatMessages">
+      {% if not messages %}
+      <div style="text-align:center;color:var(--text-3);font-size:.85rem;margin:auto">
+        No messages yet. Say hello! 👋
+      </div>
+      {% endif %}
+
+      {% for msg in messages %}
+        {% set is_sent = msg.sender_id == current_user.id %}
+
+        {% if msg.msg_type == 'booking_request' and msg.booking %}
+          <!-- Booking request card -->
+          <div class="msg {% if is_sent %}msg--sent{% else %}msg--received{% endif %}">
+            {% if not is_sent %}
+            <div class="avatar avatar--{{ msg.sender.role }} msg__avatar">
+              {{ msg.sender.username[0].upper() }}
+            </div>
+            {% endif %}
+            <div>
+              <div class="booking-card {% if is_sent %}booking-card--sent{% endif %}">
+                <div class="booking-card__label">📦 Booking Request</div>
+                <div class="booking-card__title">{{ msg.booking.service.title }}</div>
+                <div class="booking-card__price">₹{{ "%.2f"|format(msg.booking.amount) }}</div>
+                <div class="booking-card__actions">
+                  {% if msg.booking.status == 'pending' %}
+                    {% if not is_sent and current_user.role == 'freelancer' %}
+                    <form method="POST" action="{{ url_for('chat_update_booking', other_id=msg.sender_id, booking_id=msg.booking.id) }}">
+                      <input type="hidden" name="status" value="accepted">
+                      <button type="submit" class="btn btn--primary btn--xs">✓ Accept</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('chat_update_booking', other_id=msg.sender_id, booking_id=msg.booking.id) }}">
+                      <input type="hidden" name="status" value="cancelled">
+                      <button type="submit" class="btn btn--danger btn--xs">✕ Decline</button>
+                    </form>
+                    {% else %}
+                    <span class="booking-card__status status--pending">Awaiting response</span>
+                    {% endif %}
+                  {% elif msg.booking.status == 'accepted' %}
+                    {% if not is_sent and current_user.role == 'freelancer' %}
+                    <form method="POST" action="{{ url_for('chat_complete_booking', other_id=msg.sender_id, booking_id=msg.booking.id) }}">
+                      <button type="submit" class="btn btn--outline btn--xs">Mark Done</button>
+                    </form>
+                    {% else %}
+                    <span class="booking-card__status status--accepted">✓ Accepted</span>
+                    {% endif %}
+                  {% elif msg.booking.status == 'completed' %}
+                    <span class="booking-card__status status--completed">✓ Completed</span>
+                  {% else %}
+                    <span class="booking-card__status status--cancelled">✕ Declined</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="msg__time">{{ msg.created_at.strftime('%b %d, %H:%M') }}</div>
+            </div>
+            {% if is_sent %}
+            <div class="avatar avatar--{{ msg.sender.role }} msg__avatar">
+              {{ msg.sender.username[0].upper() }}
+            </div>
+            {% endif %}
+          </div>
+
+        {% else %}
+          <!-- Regular text message -->
+          <div class="msg {% if is_sent %}msg--sent{% else %}msg--received{% endif %}">
+            {% if not is_sent %}
+            <div class="avatar avatar--{{ msg.sender.role }} msg__avatar">
+              {{ msg.sender.username[0].upper() }}
+            </div>
+            {% endif %}
+            <div>
+              <div class="msg__bubble">{{ msg.content }}</div>
+              <div class="msg__time">{{ msg.created_at.strftime('%b %d, %H:%M') }}</div>
+            </div>
+            {% if is_sent %}
+            <div class="avatar avatar--{{ msg.sender.role }} msg__avatar">
+              {{ msg.sender.username[0].upper() }}
+            </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- Input area -->
+    <div class="chat-input-area">
+
+      <!-- Booking request bar (only for client with service context, if no pending booking) -->
+      {% if service and current_user.role == 'client' %}
+        {% set already_requested = false %}
+        {% for msg in messages %}
+          {% if msg.msg_type == 'booking_request' and msg.booking and msg.booking.service_id == service.id and msg.sender_id == current_user.id %}
+            {% set already_requested = true %}
+          {% endif %}
+        {% endfor %}
+        {% if not already_requested %}
+        <div class="booking-request-bar">
+          <div class="booking-request-bar__info">
+            Ready to hire? Send a booking request for <strong>{{ service.title }}</strong>
+          </div>
+          <form method="POST" action="{{ url_for('chat', other_id=other.id, service_id=service.id) }}">
+            <input type="hidden" name="action" value="send_booking">
+            <input type="hidden" name="content" value="">
+            <button type="submit" class="btn btn--primary btn--sm">Send Booking Request</button>
+          </form>
+        </div>
+        {% else %}
+        <div class="booking-request-bar">
+          <div class="booking-request-bar__info">Booking request already sent for <strong>{{ service.title }}</strong></div>
+        </div>
+        {% endif %}
+      {% endif %}
+
+      <form method="POST" action="{{ url_for('chat', other_id=other.id, service_id=service.id if service else '') }}" id="chatForm">
+        <input type="hidden" name="action" value="send_message">
+        <div class="chat-input-row">
+          <textarea class="chat-input" name="content" id="chatInput"
+            placeholder="Type a message…" rows="1"></textarea>
+          <button type="submit" class="chat-send-btn">
+            Send
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Auto-scroll to bottom
+  var msgs = document.getElementById('chatMessages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+  // Send on Enter (Shift+Enter for newline)
+  document.getElementById('chatInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (this.value.trim()) document.getElementById('chatForm').submit();
+    }
+  });
+
+  // Auto-grow textarea
+  document.getElementById('chatInput').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+</script>
+{% endblock %}

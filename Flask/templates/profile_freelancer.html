@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}My Profile — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--freelancer">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <nav class="sidebar__nav">
+
+  <a href="{{ url_for('dashboard') }}"
+     class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    <span>Overview</span>
+  </a>
+
+  <a href="{{ url_for('add_service') }}"
+     class="nav-item {% if request.endpoint == 'add_service' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="16"/>
+      <line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    <span>Add Proposal</span>
+  </a>
+
+  <a href="{{ url_for('booking_requests') }}"
+     class="nav-item {% if request.endpoint == 'booking_requests' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    <span>Booking Requests</span>
+  </a>
+
+  <a href="{{ url_for('messages') }}"
+     class="nav-item {% if request.endpoint == 'messages' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span>Messages</span>
+
+    {% if unread_msgs > 0 %}
+    <span style="background:var(--admin);color:#fff;font-size:.6rem;
+      font-weight:700;padding:1px 5px;border-radius:999px;margin-left:4px">
+      {{ unread_msgs }}
+    </span>
+    {% endif %}
+  </a>
+
+  <a href="{{ url_for('payments') }}"
+     class="nav-item {% if request.endpoint == 'payments' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+    <span>Earnings</span>
+  </a>
+
+  <a href="{{ url_for('freelancer_profile') }}"
+     class="nav-item {% if request.endpoint == 'freelancer_profile' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20c2-4 6-6 8-6s6 2 8 6"/>
+    </svg>
+    <span>My Profile</span>
+  </a>
+
+</nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--freelancer">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Freelancer</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Account Settings</p>
+        <h2 class="page-header__title">My Profile</h2>
+      </div>
+    </header>
+
+    <div style="display:grid;gap:24px;max-width:680px">
+
+      <!-- Profile Info Card -->
+      <div class="table-card" style="padding:28px">
+        <h3 style="margin:0 0 20px;font-size:1rem;font-weight:600;color:var(--text-1)">Profile Information</h3>
+        <form method="POST" action="{{ url_for('freelancer_profile') }}">
+          <input type="hidden" name="action" value="update_profile">
+
+          <div class="field" style="margin-bottom:16px">
+            <label class="field__label" for="full_name">Full Name</label>
+            <div class="field__wrap">
+              <input class="field__input" type="text" id="full_name" name="full_name"
+                value="{{ current_user.full_name }}" required>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:16px">
+            <label class="field__label" for="email">Email Address</label>
+            <div class="field__wrap">
+              <input class="field__input" type="email" id="email" name="email"
+                value="{{ current_user.email }}" required>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:16px">
+            <label class="field__label" for="phone">Phone Number <span style="color:var(--text-3)">(optional)</span></label>
+            <div class="field__wrap">
+              <input class="field__input" type="tel" id="phone" name="phone"
+                value="{{ current_user.phone or '' }}" placeholder="+91 XXXXX XXXXX">
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:20px">
+            <label class="field__label" for="bio">Bio / About You <span style="color:var(--text-3)">(optional)</span></label>
+            <div class="field__wrap">
+              <textarea class="field__input field__textarea" id="bio" name="bio"
+                placeholder="Tell clients about your skills and experience…" rows="4">{{ current_user.bio or '' }}</textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-size:.8rem;color:var(--text-3)">
+              Member since {{ current_user.created_at.strftime('%b %Y') }}
+            </div>
+            <button type="submit" class="btn btn--primary btn--sm" style="margin-left:auto">
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Change Password Card -->
+      <div class="table-card" style="padding:28px">
+        <h3 style="margin:0 0 20px;font-size:1rem;font-weight:600;color:var(--text-1)">Change Password</h3>
+        <form method="POST" action="{{ url_for('freelancer_profile') }}">
+          <input type="hidden" name="action" value="change_password">
+
+          <div class="field" style="margin-bottom:16px">
+            <label class="field__label" for="current_password">Current Password</label>
+            <div class="field__wrap">
+              <input class="field__input" type="password" id="current_password"
+                name="current_password" required placeholder="Enter your current password">
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:16px">
+            <label class="field__label" for="new_password">New Password</label>
+            <div class="field__wrap">
+              <input class="field__input" type="password" id="new_password"
+                name="new_password" required placeholder="At least 6 characters">
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:20px">
+            <label class="field__label" for="confirm_password">Confirm New Password</label>
+            <div class="field__wrap">
+              <input class="field__input" type="password" id="confirm_password"
+                name="confirm_password" required placeholder="Repeat new password">
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end">
+            <button type="submit" class="btn btn--outline btn--sm">Update Password</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Read-only Info -->
+      <div class="table-card" style="padding:28px">
+        <h3 style="margin:0 0 16px;font-size:1rem;font-weight:600;color:var(--text-1)">Account Details</h3>
+        <div style="display:grid;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:.85rem;color:var(--text-2)">Username</span>
+            <span style="font-size:.85rem;font-weight:500;color:var(--text-1)">@{{ current_user.username }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:.85rem;color:var(--text-2)">Role</span>
+            <span class="status-badge status-badge--accepted">Freelancer</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0">
+            <span style="font-size:.85rem;color:var(--text-2)">Joined</span>
+            <span style="font-size:.85rem;color:var(--text-1)">{{ current_user.created_at.strftime('%d %B %Y') }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+{% endblock %}

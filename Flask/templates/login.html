@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Login — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="auth-layout">
+
+  <!-- Left panel -->
+  <div class="auth-panel auth-panel--brand">
+    <div class="brand">
+      <div class="brand__mark">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <div class="brand__tagline">
+      <p>Where talent<br>meets opportunity.</p>
+    </div>
+    <div class="brand__orb brand__orb--1"></div>
+    <div class="brand__orb brand__orb--2"></div>
+  </div>
+
+  <!-- Right panel (form) -->
+  <div class="auth-panel auth-panel--form">
+    <div class="form-card">
+      <div class="form-card__header">
+        <h1 class="form-card__title">Welcome back</h1>
+        <p class="form-card__sub">Sign in to your account</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('login') }}" class="form" id="loginForm" novalidate>
+        <div class="field">
+          <label class="field__label" for="username">Username</label>
+          <div class="field__wrap">
+            <input
+              class="field__input"
+              type="text"
+              id="username"
+              name="username"
+              placeholder="Enter your username"
+              autocomplete="username"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="password">Password</label>
+          <div class="field__wrap field__wrap--pw">
+            <input
+              class="field__input"
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              required
+            />
+            <button type="button" class="pw-toggle" data-target="password" aria-label="Toggle password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full">
+          <span>Sign In</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+
+      <p class="form-card__footer">
+        No account yet?
+        <a href="{{ url_for('register') }}" class="link">Create one</a>
+      </p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

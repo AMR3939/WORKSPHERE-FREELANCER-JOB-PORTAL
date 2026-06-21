@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Users — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--admin">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <nav class="sidebar__nav">
+
+  <a href="{{ url_for('dashboard') }}"
+     class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    <span>Overview</span>
+  </a>
+
+  <a href="{{ url_for('admin_users') }}"
+     class="nav-item {% if request.endpoint == 'admin_users' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    <span>Users</span>
+  </a>
+
+
+
+
+
+  <a href="{{ url_for('admin_profile') }}"
+     class="nav-item {% if request.endpoint == 'admin_profile' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+    <span>My Profile</span>
+  </a>
+
+</nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--admin">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Admin</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Manage registered accounts</p>
+        <h2 class="page-header__title">All Users</h2>
+      </div>
+      <div class="page-header__right">
+        <span class="badge badge--admin">{{ users | length }} total</span>
+      </div>
+    </header>
+
+    <div class="table-card">
+      {% if users %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Password Hash</th>
+              <th>Created At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td class="td--id">{{ user.id }}</td>
+              <td>
+                <div class="user-cell">
+                  <div class="avatar avatar--{{ user.role }} avatar--xs">{{ user.username[0].upper() }}</div>
+                  <span>{{ user.username }}</span>
+                </div>
+              </td>
+              <td>{{ user.full_name }}</td>
+              <td class="td--email">{{ user.email }}</td>
+              <td><span class="role-badge role-badge--{{ user.role }}">{{ user.role }}</span></td>
+              <td class="td--hash">
+                <span class="hash-text" title="{{ user.password_hash }}">{{ user.password_hash[:30] }}…</span>
+              </td>
+              <td class="td--date">{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-state__icon">👥</div>
+        <h3>No users yet</h3>
+        <p>Registered users will appear here.</p>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+{% endblock %}

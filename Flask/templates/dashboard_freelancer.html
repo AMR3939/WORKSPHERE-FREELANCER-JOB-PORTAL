@@ -1,0 +1,658 @@
+{% extends "base.html" %}
+{% block title %}Freelancer Dashboard — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--freelancer">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <nav class="sidebar__nav">
+
+  <a href="{{ url_for('dashboard') }}"
+     class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    <span>Overview</span>
+  </a>
+
+  <a href="{{ url_for('add_service') }}"
+     class="nav-item {% if request.endpoint == 'add_service' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="16"/>
+      <line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    <span>Add Proposal</span>
+  </a>
+
+  <a href="{{ url_for('booking_requests') }}"
+     class="nav-item {% if request.endpoint == 'booking_requests' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    <span>Booking Requests</span>
+  </a>
+
+  <a href="{{ url_for('messages') }}"
+     class="nav-item {% if request.endpoint == 'messages' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span>Messages</span>
+
+    {% if unread_msgs > 0 %}
+    <span style="background:var(--admin);color:#fff;font-size:.6rem;
+      font-weight:700;padding:1px 5px;border-radius:999px;margin-left:4px">
+      {{ unread_msgs }}
+    </span>
+    {% endif %}
+  </a>
+
+  <a href="{{ url_for('payments') }}"
+     class="nav-item {% if request.endpoint == 'payments' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+    <span>Earnings</span>
+  </a>
+
+  <a href="{{ url_for('freelancer_profile') }}"
+     class="nav-item {% if request.endpoint == 'freelancer_profile' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20c2-4 6-6 8-6s6 2 8 6"/>
+    </svg>
+    <span>My Profile</span>
+  </a>
+
+</nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--freelancer">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Freelancer</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Hi, <strong>{{ current_user.username }}</strong> 👋</p>
+        <h2 class="page-header__title">Freelancer Dashboard</h2>
+      </div>
+      <div class="page-header__right">
+        <a href="{{ url_for('add_service') }}" class="btn btn--primary btn--sm">+ Add Proposal</a>
+      </div>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card stat-card--accent">
+        <span class="stat-card__label">Active Jobs</span>
+        <span class="stat-card__value">{{ active_jobs }}</span>
+        <div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+            width="24">
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+            <path d="M8 21h8M12 17v4" />
+          </svg></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">Proposals Posted</span>
+        <span class="stat-card__value">{{ proposals_sent }}</span>
+        <div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+            width="24">
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">Total Earnings</span>
+        <span class="stat-card__value">₹{{ "%.2f"|format(total_earnings) }}</span>
+        <div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+            width="24">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">Pending Requests</span>
+        <span class="stat-card__value">{{ my_bookings | selectattr('status', 'equalto', 'pending') | list | length
+          }}</span>
+        <div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+            width="24">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg></div>
+      </div>
+    </div>
+
+    <!-- My Proposals -->
+    <div class="section-header">
+      <h3 class="section-title">My Proposals</h3>
+      <a href="{{ url_for('add_service') }}" class="btn btn--outline btn--sm">+ New</a>
+    </div>
+
+    {% if my_services %}
+    <div class="services-grid" id="proposalsGrid">
+      {% for service in my_services %}
+      <div class="service-card service-card--own proposal-card">
+        <div class="service-card__header">
+          <span class="service-card__category">{{ service.category }}</span>
+          <span class="service-card__price">₹{{ "%.2f"|format(service.price) }}</span>
+        </div>
+        <h4 class="service-card__title">{{ service.title }}</h4>
+        <p class="service-card__desc">{{ service.description[:100] }}{% if service.description|length > 100 %}…{% endif
+          %}</p>
+        <div class="service-card__footer">
+          <span class="service-card__bookings">
+            {{ service.bookings | length }} booking{{ 's' if service.bookings | length != 1 }}
+          </span>
+          <form method="POST" action="{{ url_for('delete_service', service_id=service.id) }}" style="display:inline">
+            <button type="submit" class="btn-icon btn-icon--danger" title="Remove proposal"
+              onclick="return confirm('Remove this proposal?')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14H6L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4h6v2" />
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Show More / Less toggle -->
+    <div class="proposals-toggle-wrap" id="proposalsToggleWrap">
+      <button type="button" id="toggleProposalsBtn" class="toggle-proposals-btn">
+        Show All Proposals
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+    </div>
+
+    {% else %}
+    <div class="empty-state empty-state--sm">
+      <div class="empty-state__icon">📋</div>
+      <h3>No proposals yet</h3>
+      <p>Add your first proposal so clients can find and book your services.</p>
+      <a href="{{ url_for('add_service') }}" class="btn btn--primary">Add Proposal</a>
+    </div>
+    {% endif %}
+
+    <!-- Booking Requests -->
+    {% if my_bookings %}
+    <div class="section-header" style="margin-top:32px">
+      <h3 class="section-title">Booking Requests</h3>
+    </div>
+    <div class="table-card">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Service</th>
+              <th>Amount</th>
+              <th>Message</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for booking in my_bookings %}
+            <tr>
+              <td>
+                <div class="user-cell">
+                  <div class="avatar avatar--client avatar--xs">{{ booking.client.username[0].upper() }}</div>
+                  <span>{{ booking.client.username }}</span>
+                </div>
+              </td>
+              <td>{{ booking.service.title }}</td>
+              <td style="color:var(--freelancer);font-weight:600">₹{{ "%.2f"|format(booking.amount) }}</td>
+              <td class="td--email">{{ booking.message[:40] ~ '…' if booking.message and booking.message|length > 40
+                else (booking.message or '-') }}</td>
+              <td class="td--date">{{ booking.created_at.strftime('%Y-%m-%d') }}</td>
+              <td><span class="status-badge status-badge--{{ booking.status }}">{{ booking.status }}</span></td>
+              <td>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                  <!-- Expand / View Details -->
+                  <button type="button" class="btn btn--outline btn--xs expand-btn" data-id="{{ booking.id }}"
+                    data-client="{{ booking.client.username }}" data-client-full="{{ booking.client.full_name }}"
+                    data-service="{{ booking.service.title }}" data-category="{{ booking.service.category }}"
+                    data-amount="{{ booking.amount }}" data-date="{{ booking.created_at.strftime('%d %b %Y') }}"
+                    data-status="{{ booking.status }}" data-message="{{ booking.message | default('', true) | e }}"
+                    data-milestones="{{ booking.milestones | map(attribute='week_number') | list | tojson | e }}"
+                    data-milestone-descs="{{ booking.milestones | map(attribute='description') | list | tojson | e }}"
+                    data-milestone-prices="{{ booking.milestones | map(attribute='price') | list | tojson | e }}"
+                    data-accept-url="{{ url_for('chat_update_booking', other_id=booking.client_id, booking_id=booking.id) }}"
+                    data-decline-url="{{ url_for('chat_update_booking', other_id=booking.client_id, booking_id=booking.id) }}"
+                    data-complete-url="{{ url_for('chat_complete_booking', other_id=booking.client_id, booking_id=booking.id) }}"
+                    data-chat-url="{{ url_for('chat', other_id=booking.client_id) }}" style="white-space:nowrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12">
+                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                    </svg>
+                    View
+                  </button>
+
+                  {% if booking.status == 'pending' %}
+                  <form method="POST"
+                    action="{{ url_for('chat_update_booking', other_id=booking.client_id, booking_id=booking.id) }}">
+                    <input type="hidden" name="status" value="accepted">
+                    <button type="submit" class="btn btn--primary btn--xs"
+                      onclick="return confirm('Accept this booking?')"
+                      style="background:#2a9d8f;border-color:#2a9d8f;white-space:nowrap">
+                      ✅ Accept
+                    </button>
+                  </form>
+                  <form method="POST"
+                    action="{{ url_for('chat_update_booking', other_id=booking.client_id, booking_id=booking.id) }}">
+                    <input type="hidden" name="status" value="cancelled">
+                    <button type="submit" class="btn btn--outline btn--xs"
+                      onclick="return confirm('Decline this booking?')"
+                      style="color:#e55;border-color:#e55;white-space:nowrap">
+                      ❌ Decline
+                    </button>
+                  </form>
+                  {% elif booking.status == 'accepted' %}
+                  <form method="POST"
+                    action="{{ url_for('chat_complete_booking', other_id=booking.client_id, booking_id=booking.id) }}">
+                    <button type="submit" class="btn btn--primary btn--xs"
+                      onclick="return confirm('Mark as completed?')"
+                      style="background:var(--accent);border-color:var(--accent);white-space:nowrap">
+                      🎉 Complete
+                    </button>
+                  </form>
+                  {% endif %}
+                  <a href="{{ url_for('chat', other_id=booking.client_id) }}" class="btn btn--outline btn--xs"
+                    style="white-space:nowrap">💬 Chat</a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+
+<!-- ── Booking Detail Modal ─────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="bookingDetailModal">
+  <div class="modal modal--detail">
+    <div class="modal__header">
+      <div>
+        <h3 class="modal__title" id="detailTitle">Booking Details</h3>
+        <div id="detailMeta" style="font-size:.78rem;color:var(--text-2);margin-top:3px"></div>
+      </div>
+      <button class="modal__close" id="closeDetailModal">✕</button>
+    </div>
+    <div class="modal__body" style="max-height:75vh;overflow-y:auto;padding-right:4px">
+
+      <!-- Client + Service Row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div class="detail-block">
+          <div class="detail-block__label">Client</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <div class="avatar avatar--client avatar--xs" id="detailClientAvatar"></div>
+            <div>
+              <div style="font-weight:600;color:var(--text);font-size:.9rem" id="detailClientFull"></div>
+              <div style="font-size:.75rem;color:var(--text-2)" id="detailClientUser"></div>
+            </div>
+          </div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-block__label">Service</div>
+          <div style="font-weight:600;color:var(--text);font-size:.9rem;margin-top:6px" id="detailService"></div>
+          <div style="font-size:.75rem;color:var(--text-3);margin-top:2px" id="detailCategory"></div>
+        </div>
+      </div>
+
+      <!-- Amount + Date + Status -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+        <div class="detail-block">
+          <div class="detail-block__label">Total Amount</div>
+          <div
+            style="font-size:1.4rem;font-weight:700;color:var(--freelancer);font-family:'Cormorant Garamond',serif;margin-top:4px"
+            id="detailAmount"></div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-block__label">Booked On</div>
+          <div style="font-size:.9rem;font-weight:500;color:var(--text);margin-top:4px" id="detailDate"></div>
+        </div>
+        <div class="detail-block">
+          <div class="detail-block__label">Status</div>
+          <div style="margin-top:4px" id="detailStatusBadge"></div>
+        </div>
+      </div>
+
+      <!-- Requirements -->
+      <div id="detailMsgSection" style="margin-bottom:16px;display:none">
+        <div class="detail-block__label" style="margin-bottom:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12"
+            style="margin-right:4px;vertical-align:middle">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Project Requirements
+        </div>
+        <div id="detailMessage" style="font-size:.87rem;color:var(--text);line-height:1.6;background:var(--bg-3);
+                 border:1px solid var(--border);border-radius:8px;padding:12px 14px;white-space:pre-wrap"></div>
+      </div>
+
+      <!-- Milestones -->
+      <div id="detailMilestonesSection" style="margin-bottom:16px;display:none">
+        <div class="detail-block__label" style="margin-bottom:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12"
+            style="margin-right:4px;vertical-align:middle">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          Weekly Milestones
+        </div>
+        <div id="detailMilestones"></div>
+        <div id="detailMilestonesTotal" style="display:flex;justify-content:flex-end;align-items:center;gap:10px;
+                 padding-top:8px;margin-top:4px;border-top:1px dashed var(--border);
+                 font-size:.8rem;color:var(--text-2)"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div id="detailActions"
+        style="display:flex;gap:10px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--border)"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Proposals show / hide toggle */
+  .proposal-hidden {
+    display: none !important;
+  }
+
+  .proposals-toggle-wrap {
+    text-align: center;
+    margin: 20px 0 10px;
+  }
+
+  .toggle-proposals-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 24px;
+    background: transparent;
+    border: 1px solid var(--freelancer);
+    color: var(--freelancer);
+    border-radius: 20px;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, color .2s, box-shadow .2s;
+    letter-spacing: .03em;
+  }
+
+  .toggle-proposals-btn:hover {
+    background: rgba(var(--freelancer-rgb, 42, 157, 143), .1);
+    box-shadow: 0 0 0 3px rgba(var(--freelancer-rgb, 42, 157, 143), .1);
+  }
+
+  .toggle-proposals-btn svg {
+    transition: transform .25s ease;
+  }
+
+  .toggle-proposals-btn.expanded svg {
+    transform: rotate(180deg);
+  }
+
+  .modal--detail {
+    max-width: 680px;
+    width: 95vw;
+  }
+
+  .detail-block {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .detail-block__label {
+    font-size: .68rem;
+    font-weight: 600;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+
+  .detail-milestone-row {
+    display: grid;
+    grid-template-columns: 72px 1fr 90px;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 7px;
+  }
+
+  .detail-milestone-week {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--freelancer);
+  }
+
+  .detail-milestone-desc {
+    font-size: .85rem;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .detail-milestone-price {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: right;
+    font-family: 'Cormorant Garamond', serif;
+  }
+</style>
+
+{% block extra_js %}
+<script>
+  (function () {
+    /* ── Proposals Show / Hide (max 3 visible by default) ───────────────── */
+    var MAX_VISIBLE = 3;
+    var showAll = false;
+    var proposalCards = Array.from(document.querySelectorAll('.proposal-card'));
+    var toggleBtn = document.getElementById('toggleProposalsBtn');
+    var toggleWrap = document.getElementById('proposalsToggleWrap');
+
+    function applyToggleState() {
+      proposalCards.forEach(function (card, idx) {
+        if (showAll || idx < MAX_VISIBLE) {
+          card.classList.remove('proposal-hidden');
+        } else {
+          card.classList.add('proposal-hidden');
+        }
+      });
+
+      if (toggleBtn) {
+        if (showAll) {
+          toggleBtn.innerHTML =
+            'Show Less' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14">' +
+            '<polyline points="18 15 12 9 6 15"/></svg>';
+          toggleBtn.classList.add('expanded');
+        } else {
+          toggleBtn.innerHTML =
+            'Show All Proposals' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14">' +
+            '<polyline points="6 9 12 15 18 9"/></svg>';
+          toggleBtn.classList.remove('expanded');
+        }
+      }
+    }
+
+    function initProposalCards() {
+      if (proposalCards.length <= MAX_VISIBLE) {
+        proposalCards.forEach(function (c) { c.classList.remove('proposal-hidden'); });
+        if (toggleWrap) toggleWrap.style.display = 'none';
+        return;
+      }
+      applyToggleState();
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function () {
+        showAll = !showAll;
+        applyToggleState();
+      });
+    }
+
+    initProposalCards();
+
+    /* ── Booking Detail Modal ───────────────────────────────────────────── */
+    var overlay = document.getElementById('bookingDetailModal');
+    var closeBtn = document.getElementById('closeDetailModal');
+
+    function closeModal() { overlay.classList.remove('modal-overlay--active'); }
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+
+    document.querySelectorAll('.expand-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var d = this.dataset;
+
+        /* Header */
+        document.getElementById('detailTitle').textContent = 'Booking #' + d.id;
+        document.getElementById('detailMeta').textContent = d.service + ' · ' + d.date;
+
+        /* Client */
+        document.getElementById('detailClientAvatar').textContent = d.client.charAt(0).toUpperCase();
+        document.getElementById('detailClientFull').textContent = d.clientFull;
+        document.getElementById('detailClientUser').textContent = '@' + d.client;
+
+        /* Service */
+        document.getElementById('detailService').textContent = d.service;
+        document.getElementById('detailCategory').textContent = d.category;
+
+        /* Amount / Date / Status */
+        document.getElementById('detailAmount').textContent = '₹' + parseFloat(d.amount).toFixed(2);
+        document.getElementById('detailDate').textContent = d.date;
+        var statusMap = { pending: 'pending', accepted: 'accepted', completed: 'completed', cancelled: 'cancelled' };
+        document.getElementById('detailStatusBadge').innerHTML =
+          '<span class="status-badge status-badge--' + d.status + '" style="font-size:.75rem;padding:4px 12px">' +
+          d.status.charAt(0).toUpperCase() + d.status.slice(1) + '</span>';
+
+        /* Requirements */
+        var msgSection = document.getElementById('detailMsgSection');
+        var msgEl = document.getElementById('detailMessage');
+        if (d.message && d.message.trim()) {
+          msgEl.textContent = d.message;
+          msgSection.style.display = '';
+        } else {
+          msgSection.style.display = 'none';
+        }
+
+        /* Milestones */
+        var msSection = document.getElementById('detailMilestonesSection');
+        var msEl = document.getElementById('detailMilestones');
+        var msTotal = document.getElementById('detailMilestonesTotal');
+        msEl.innerHTML = '';
+        try {
+          var weeks = JSON.parse(d.milestones);
+          var descs = JSON.parse(d.milestoneDescs);
+          var prices = JSON.parse(d.milestonePrices);
+          if (weeks.length > 0) {
+            var total = 0;
+            weeks.forEach(function (wk, i) {
+              total += parseFloat(prices[i]);
+              var row = document.createElement('div');
+              row.className = 'detail-milestone-row';
+              row.innerHTML =
+                '<div class="detail-milestone-week">Week ' + wk + '</div>' +
+                '<div class="detail-milestone-desc">' + descs[i] + '</div>' +
+                '<div class="detail-milestone-price">₹' + parseFloat(prices[i]).toFixed(2) + '</div>';
+              msEl.appendChild(row);
+            });
+            msTotal.innerHTML = weeks.length + ' week' + (weeks.length !== 1 ? 's' : '') +
+              ' &nbsp;·&nbsp; <strong style="color:var(--freelancer)">₹' + total.toFixed(2) + ' total</strong>';
+            msSection.style.display = '';
+          } else {
+            msSection.style.display = 'none';
+          }
+        } catch (e) {
+          msSection.style.display = 'none';
+        }
+
+        /* Action buttons */
+        var actions = document.getElementById('detailActions');
+        actions.innerHTML = '';
+
+        // Chat always shown
+        actions.innerHTML +=
+          '<a href="' + d.chatUrl + '" class="btn btn--outline btn--sm">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+          ' Chat with Client</a>';
+
+        if (d.status === 'pending') {
+          actions.innerHTML +=
+            '<form method="POST" action="' + d.declineUrl + '" style="display:inline">' +
+            '<input type="hidden" name="status" value="cancelled">' +
+            '<button type="submit" class="btn btn--sm" onclick="return confirm(\'Decline this booking?\')" ' +
+            'style="background:transparent;border:1px solid rgba(229,85,85,.4);color:#e55">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+            ' Decline</button></form>';
+          actions.innerHTML +=
+            '<form method="POST" action="' + d.acceptUrl + '" style="display:inline">' +
+            '<input type="hidden" name="status" value="accepted">' +
+            '<button type="submit" class="btn btn--primary btn--sm" onclick="return confirm(\'Accept this booking?\')" ' +
+            'style="background:#2a9d8f;border-color:#2a9d8f">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13"><polyline points="20 6 9 17 4 12"/></svg>' +
+            ' Accept Booking</button></form>';
+        } else if (d.status === 'accepted') {
+          actions.innerHTML +=
+            '<form method="POST" action="' + d.completeUrl + '" style="display:inline">' +
+            '<button type="submit" class="btn btn--primary btn--sm" onclick="return confirm(\'Mark as completed?\')" ' +
+            'style="background:var(--accent);border-color:var(--accent)">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13"><polyline points="20 6 9 17 4 12"/></svg>' +
+            ' Mark Complete</button></form>';
+        } else if (d.status === 'completed') {
+          actions.innerHTML += '<span style="font-size:.82rem;color:#2a9d8f">✓ Project completed</span>';
+        } else if (d.status === 'cancelled') {
+          actions.innerHTML += '<span style="font-size:.82rem;color:#e55">✕ Booking declined</span>';
+        }
+
+        overlay.classList.add('modal-overlay--active');
+      });
+    });
+  })();
+</script>
+{% endblock %}
+{% endblock %}

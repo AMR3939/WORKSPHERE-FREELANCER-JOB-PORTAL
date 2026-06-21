@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+{% block title %}Booking Requests — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--freelancer">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <nav class="sidebar__nav">
+
+  <a href="{{ url_for('dashboard') }}"
+     class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    <span>Overview</span>
+  </a>
+
+  <a href="{{ url_for('add_service') }}"
+     class="nav-item {% if request.endpoint == 'add_service' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="16"/>
+      <line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    <span>Add Proposal</span>
+  </a>
+
+  <a href="{{ url_for('booking_requests') }}"
+     class="nav-item {% if request.endpoint == 'booking_requests' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    <span>Booking Requests</span>
+  </a>
+
+  <a href="{{ url_for('messages') }}"
+     class="nav-item {% if request.endpoint == 'messages' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <span>Messages</span>
+
+    {% if unread_msgs > 0 %}
+    <span style="background:var(--admin);color:#fff;font-size:.6rem;
+      font-weight:700;padding:1px 5px;border-radius:999px;margin-left:4px">
+      {{ unread_msgs }}
+    </span>
+    {% endif %}
+  </a>
+
+  <a href="{{ url_for('payments') }}"
+     class="nav-item {% if request.endpoint == 'payments' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+    <span>Earnings</span>
+  </a>
+
+  <a href="{{ url_for('freelancer_profile') }}"
+     class="nav-item {% if request.endpoint == 'freelancer_profile' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20c2-4 6-6 8-6s6 2 8 6"/>
+    </svg>
+    <span>My Profile</span>
+  </a>
+
+</nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--freelancer">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Freelancer</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Review & respond</p>
+        <h2 class="page-header__title">Booking Requests</h2>
+      </div>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-grid" style="margin-bottom:28px">
+      <div class="stat-card stat-card--accent">
+        <span class="stat-card__label">Total Requests</span>
+        <span class="stat-card__value">{{ my_bookings | length }}</span>
+        <div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">Pending</span>
+        <span class="stat-card__value">{{ my_bookings | selectattr('status','equalto','pending') | list | length }}</span>
+        <div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">Active</span>
+        <span class="stat-card__value">{{ my_bookings | selectattr('status','equalto','accepted') | list | length }}</span>
+        <div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__label">Completed</span>
+        <span class="stat-card__value">{{ my_bookings | selectattr('status','equalto','completed') | list | length }}</span>
+        <div class="stat-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="section-header" style="margin-bottom:20px">
+      <h3 class="section-title">All Requests</h3>
+      <div style="display:flex;gap:8px" id="filterTabs">
+        <button class="filter-tab filter-tab--active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="pending">Pending</button>
+        <button class="filter-tab" data-filter="accepted">Active</button>
+        <button class="filter-tab" data-filter="completed">Completed</button>
+        <button class="filter-tab" data-filter="cancelled">Cancelled</button>
+      </div>
+    </div>
+
+    {% if my_bookings %}
+    <div id="requestsContainer">
+      {% for booking in my_bookings %}
+      <div class="request-card" data-status="{{ booking.status }}" id="req-{{ booking.id }}">
+
+        <!-- Card Header -->
+        <div class="request-card__header">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="avatar avatar--client">{{ booking.client.username[0].upper() }}</div>
+            <div>
+              <div style="font-weight:600;font-size:.95rem;color:var(--text)">{{ booking.client.full_name }}</div>
+              <div style="font-size:.75rem;color:var(--text-2)">@{{ booking.client.username }}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="status-badge status-badge--{{ booking.status }}" style="font-size:.75rem;padding:4px 12px">
+              {{ booking.status | capitalize }}
+            </span>
+            <span style="font-size:.75rem;color:var(--text-3)">{{ booking.created_at.strftime('%d %b %Y') }}</span>
+          </div>
+        </div>
+
+        <!-- Service + Amount Row -->
+        <div class="request-card__service-row">
+          <div class="request-card__service-info">
+            <span style="font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)">Service</span>
+            <span style="font-weight:600;color:var(--text);margin-top:2px">{{ booking.service.title }}</span>
+            <span style="font-size:.75rem;color:var(--text-3)">{{ booking.service.category }}</span>
+          </div>
+          <div class="request-card__amount">
+            <span style="font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)">Total Amount</span>
+            <span style="font-size:1.5rem;font-weight:700;color:var(--freelancer);font-family:'Cormorant Garamond',serif">₹{{ "%.2f"|format(booking.amount) }}</span>
+          </div>
+        </div>
+
+        <!-- Requirements -->
+        {% if booking.message %}
+        <div class="request-card__section">
+          <div class="request-card__section-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Project Requirements
+          </div>
+          <p class="request-card__requirements">{{ booking.message }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Weekly Milestones -->
+        {% if booking.milestones %}
+        <div class="request-card__section">
+          <div class="request-card__section-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Weekly Milestones
+          </div>
+          <div class="milestones-grid">
+            {% for m in booking.milestones %}
+            <div class="milestone-chip">
+              <div class="milestone-chip__week">Week {{ m.week_number }}</div>
+              <div class="milestone-chip__desc">{{ m.description }}</div>
+              <div class="milestone-chip__price">₹{{ "%.2f"|format(m.price) }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="milestones-total">
+            <span style="font-size:.75rem;color:var(--text-2)">{{ booking.milestones | length }} week{{ 's' if booking.milestones | length != 1 }} · Total</span>
+            <span style="font-weight:700;color:var(--freelancer)">₹{{ "%.2f"|format(booking.amount) }}</span>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="request-card__actions">
+          <a href="{{ url_for('chat', other_id=booking.client_id) }}" class="btn btn--outline btn--sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Chat with Client
+          </a>
+
+          {% if booking.status == 'pending' %}
+            <form method="POST" action="{{ url_for('chat_update_booking', other_id=booking.client_id, booking_id=booking.id) }}" style="display:inline">
+              <input type="hidden" name="status" value="cancelled">
+              <button type="submit" class="btn btn--sm"
+                onclick="return confirm('Decline this booking request?')"
+                style="background:transparent;border:1px solid rgba(229,85,85,.4);color:#e55">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Decline
+              </button>
+            </form>
+            <form method="POST" action="{{ url_for('chat_update_booking', other_id=booking.client_id, booking_id=booking.id) }}" style="display:inline">
+              <input type="hidden" name="status" value="accepted">
+              <button type="submit" class="btn btn--primary btn--sm"
+                onclick="return confirm('Accept this booking?')"
+                style="background:#2a9d8f;border-color:#2a9d8f">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14"><polyline points="20 6 9 17 4 12"/></svg>
+                Accept Booking
+              </button>
+            </form>
+          {% elif booking.status == 'accepted' %}
+            <form method="POST" action="{{ url_for('chat_complete_booking', other_id=booking.client_id, booking_id=booking.id) }}" style="display:inline">
+              <button type="submit" class="btn btn--primary btn--sm"
+                onclick="return confirm('Mark this project as completed?')"
+                style="background:var(--accent);border-color:var(--accent)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Mark Complete
+              </button>
+            </form>
+          {% elif booking.status == 'completed' %}
+            <span style="font-size:.8rem;color:#2a9d8f;display:inline-flex;align-items:center;gap:5px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14"><polyline points="20 6 9 17 4 12"/></svg>
+              Project completed
+            </span>
+          {% elif booking.status == 'cancelled' %}
+            <span style="font-size:.8rem;color:#e55;display:inline-flex;align-items:center;gap:5px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Booking declined
+            </span>
+          {% endif %}
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+    <p style="margin-top:12px;font-size:.8rem;color:var(--text-3);text-align:right" id="rowCount"></p>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state__icon">📭</div>
+      <h3>No booking requests yet</h3>
+      <p>When clients book your services, their requests will appear here for you to review and respond.</p>
+      <a href="{{ url_for('dashboard') }}" class="btn btn--primary" style="margin-top:16px">Go to Dashboard</a>
+    </div>
+    {% endif %}
+  </main>
+</div>
+
+<style>
+/* ── Filter tabs ─────────────────────────────────────────── */
+.filter-tab {
+  padding: 5px 14px;
+  font-size: .8rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.filter-tab:hover { border-color: var(--freelancer); color: var(--freelancer); }
+.filter-tab--active { background: var(--freelancer); color: #fff; border-color: var(--freelancer); }
+
+/* ── Request card ────────────────────────────────────────── */
+.request-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+.request-card:hover {
+  border-color: rgba(78,205,196,.3);
+  box-shadow: 0 4px 24px rgba(0,0,0,.12);
+}
+
+.request-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.request-card__service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.request-card__service-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.request-card__amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.request-card__section {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.request-card__section:last-of-type { border-bottom: none; }
+
+.request-card__section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 10px;
+}
+
+.request-card__requirements {
+  font-size: .87rem;
+  color: var(--text);
+  line-height: 1.6;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ── Milestones ──────────────────────────────────────────── */
+.milestones-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.milestone-chip {
+  display: grid;
+  grid-template-columns: 72px 1fr 90px;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.milestone-chip__week {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--freelancer);
+}
+.milestone-chip__desc {
+  font-size: .85rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+.milestone-chip__price {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: right;
+  font-family: 'Cormorant Garamond', serif;
+}
+.milestones-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.request-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  background: var(--bg-3);
+  flex-wrap: wrap;
+}
+</style>
+
+{% block extra_js %}
+<script>
+  var tabs      = document.querySelectorAll('.filter-tab');
+  var cards     = document.querySelectorAll('.request-card');
+  var countEl   = document.getElementById('rowCount');
+
+  function updateCount(n) {
+    if (countEl) countEl.textContent = n + ' request' + (n !== 1 ? 's' : '') + ' shown';
+  }
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      tabs.forEach(function (t) { t.classList.remove('filter-tab--active'); });
+      this.classList.add('filter-tab--active');
+      var filter = this.dataset.filter;
+      var visible = 0;
+      cards.forEach(function (card) {
+        if (filter === 'all' || card.dataset.status === filter) {
+          card.style.display = '';
+          visible++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+      updateCount(visible);
+    });
+  });
+
+  updateCount(cards.length);
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Search Services — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--client">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <nav class="sidebar__nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Overview</span>
+      </a>
+      <a href="{{ url_for('my_bookings') }}" class="nav-item {% if request.endpoint == 'my_bookings' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span>My Bookings</span>
+      </a>
+      <a href="{{ url_for('messages') }}" class="nav-item {% if request.endpoint == 'messages' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Messages</span>
+      </a>
+      <a href="{{ url_for('client_search') }}" class="nav-item nav-item--active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>Search</span>
+      </a>
+      <a href="{{ url_for('payments') }}" class="nav-item {% if request.endpoint == 'payments' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <span>Payments</span>
+      </a>
+      <a href="{{ url_for('client_profile') }}" class="nav-item {% if request.endpoint == 'client_profile' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>My Profile</span>
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--client">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Client</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Hi, <strong>{{ current_user.username }}</strong> 👋</p>
+        <h2 class="page-header__title">Search Freelancers & Services</h2>
+      </div>
+    </header>
+
+    <!-- Search & Filters -->
+    <form method="GET" action="{{ url_for('client_search') }}" class="search-form" style="margin-bottom:24px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+
+        <!-- Text search -->
+        <div style="position:relative;flex:1;min-width:200px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16"
+            style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" name="q" value="{{ query }}"
+            placeholder="Search by service title or freelancer name…"
+            class="field__input"
+            style="padding-left:38px;width:100%">
+        </div>
+
+        <!-- Freelancer name -->
+        <input type="text" name="freelancer" value="{{ freelancer_name }}"
+          placeholder="Freelancer name…"
+          class="field__input"
+          style="width:160px">
+
+        <!-- Category -->
+        <select name="category" class="field__input" style="width:170px">
+          <option value="">All Categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+
+        <!-- Price range -->
+        <input type="number" name="min_price" value="{{ min_price or '' }}"
+          placeholder="Min ₹" class="field__input" style="width:90px" min="0">
+        <span style="color:var(--text-3);font-size:13px">–</span>
+        <input type="number" name="max_price" value="{{ max_price or '' }}"
+          placeholder="Max ₹" class="field__input" style="width:90px" min="0">
+
+        <button type="submit" class="btn btn--primary btn--sm">Search</button>
+        <a href="{{ url_for('client_search') }}" class="btn btn--outline btn--sm">Clear</a>
+      </div>
+    </form>
+
+    <!-- Results count -->
+    <div class="section-header">
+      <h3 class="section-title">Results</h3>
+      <span class="section-count">{{ results | length }} found</span>
+    </div>
+
+    <!-- Results grid -->
+    {% if results %}
+    <div class="services-grid">
+      {% for service in results %}
+      <div class="service-card">
+        <div class="service-card__header">
+          <span class="service-card__category">{{ service.category }}</span>
+          <span class="service-card__price">₹{{ "%.2f"|format(service.price) }}</span>
+        </div>
+        <h4 class="service-card__title">{{ service.title }}</h4>
+        <p class="service-card__desc">
+          {{ service.description[:100] }}{% if service.description|length > 100 %}…{% endif %}
+        </p>
+        <div class="service-card__freelancer">
+          <div class="avatar avatar--freelancer avatar--xs">{{ service.freelancer.username[0].upper() }}</div>
+          <span>{{ service.freelancer.full_name }}</span>
+        </div>
+        <button class="btn btn--primary btn--sm book-btn"
+          style="width:100%;margin-top:12px"
+          data-service-id="{{ service.id }}"
+          data-service-title="{{ service.title | e }}"
+          data-service-price="{{ service.price }}">
+          Book This Service
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state empty-state--sm">
+      <div class="empty-state__icon">🔍</div>
+      <h3>No services found</h3>
+      <p>Try different keywords, category, or price range.</p>
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+
+<!-- Book Modal (same as dashboard) -->
+<div class="modal-overlay" id="bookModal">
+  <div class="modal">
+    <div class="modal__header">
+      <h3 class="modal__title">Book Service</h3>
+      <button class="modal__close" id="closeModalBtn">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="modal__service-info">
+        <span id="modalServiceTitle" class="modal__service-name"></span>
+        <span id="modalServicePrice" class="modal__service-price"></span>
+      </div>
+      <form method="POST" id="bookForm" class="form">
+        <div class="field">
+          <label class="field__label" for="book_message">
+            Message to Freelancer <span style="color:var(--text-3)">(optional)</span>
+          </label>
+          <div class="field__wrap">
+            <textarea class="field__input field__textarea field__textarea--sm"
+              id="book_message" name="message"
+              placeholder="Describe your project requirements…"></textarea>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+          <button type="button" class="btn btn--outline" id="cancelModalBtn">Cancel</button>
+          <button type="submit" class="btn btn--primary">Send Booking Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  var modal    = document.getElementById('bookModal');
+  var bookForm = document.getElementById('bookForm');
+  var titleEl  = document.getElementById('modalServiceTitle');
+  var priceEl  = document.getElementById('modalServicePrice');
+
+  document.querySelectorAll('.book-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id    = this.dataset.serviceId;
+      var title = this.dataset.serviceTitle;
+      var price = parseFloat(this.dataset.servicePrice);
+      titleEl.textContent = title;
+      priceEl.textContent = '₹' + price.toFixed(2);
+      bookForm.action     = '/client/book/' + id;
+      modal.classList.add('modal-overlay--active');
+    });
+  });
+
+  document.getElementById('closeModalBtn').addEventListener('click', function() {
+    modal.classList.remove('modal-overlay--active');
+  });
+  document.getElementById('cancelModalBtn').addEventListener('click', function() {
+    modal.classList.remove('modal-overlay--active');
+  });
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) modal.classList.remove('modal-overlay--active');
+  });
+</script>
+{% endblock %}
+{% endblock %}

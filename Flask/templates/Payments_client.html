@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+{% block title %}Payments — WorkSphere{% endblock %}
+
+{% block extra_css %}
+<style>
+.pay-summary-bar { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+.pay-stat { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px 24px; position:relative; overflow:hidden; transition:border-color var(--trans); }
+.pay-stat:hover { border-color:var(--accent); }
+.pay-stat__label { font-size:.72rem; font-weight:500; color:var(--text-2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; display:block; }
+.pay-stat__value { font-size:1.7rem; font-weight:700; color:var(--text); font-family:'Cormorant Garamond',serif; line-height:1; display:block; }
+.pay-stat--accent .pay-stat__value { color:var(--client); }
+.pay-stat__icon { position:absolute; right:18px; top:50%; transform:translateY(-50%); opacity:.1; }
+.pay-stat--accent::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at top right,rgba(91,141,238,.08) 0%,transparent 60%); pointer-events:none; }
+.pay-section-title { font-size:.68rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--text-2); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.pay-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.pending-cards { display:flex; flex-direction:column; gap:14px; margin-bottom:36px; }
+.order-card { background:var(--bg-2); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; transition:border-color .2s,box-shadow .2s; }
+.order-card:hover { border-color:rgba(91,141,238,.4); box-shadow:0 4px 24px rgba(91,141,238,.07); }
+.order-card__header { display:flex; align-items:center; justify-content:space-between; padding:13px 20px; background:var(--bg-3); border-bottom:1px solid var(--border); flex-wrap:wrap; gap:10px; }
+.order-card__meta { display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+.order-meta-item { display:flex; flex-direction:column; gap:2px; }
+.order-meta-item__label { font-size:.62rem; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:var(--text-2); }
+.order-meta-item__value { font-size:.82rem; font-weight:500; color:var(--text); }
+.order-status-tag { font-size:.68rem; font-weight:600; letter-spacing:.06em; padding:4px 12px; border-radius:20px; text-transform:uppercase; }
+.order-status-tag--pending { background:rgba(201,167,106,.12); color:var(--accent); border:1px solid rgba(201,167,106,.25); }
+.order-status-tag--confirmed { background:rgba(91,141,238,.12); color:var(--client); border:1px solid rgba(91,141,238,.25); }
+.order-card__body { display:flex; align-items:center; gap:18px; padding:18px 20px; flex-wrap:wrap; }
+.order-service-icon { width:50px; height:50px; background:linear-gradient(135deg,rgba(91,141,238,.15),rgba(91,141,238,.04)); border:1px solid rgba(91,141,238,.2); border-radius:12px; display:grid; place-items:center; flex-shrink:0; color:var(--client); }
+.order-service-info { flex:1; min-width:0; }
+.order-service-info__title { font-size:.95rem; font-weight:600; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.order-service-info__sub { font-size:.76rem; color:var(--text-2); display:flex; align-items:center; gap:5px; }
+.order-freelancer-chip { display:flex; align-items:center; gap:8px; background:var(--bg-3); border:1px solid var(--border); border-radius:8px; padding:8px 12px; min-width:150px; }
+.order-freelancer-chip__avatar { width:28px; height:28px; border-radius:50%; background:var(--freelancer); color:var(--bg); font-size:.7rem; font-weight:700; display:grid; place-items:center; flex-shrink:0; }
+.order-card__actions { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 20px; border-top:1px solid var(--border); background:rgba(0,0,0,.12); flex-wrap:wrap; }
+.order-amount-display__label { font-size:.62rem; text-transform:uppercase; letter-spacing:.1em; color:var(--text-2); font-weight:600; display:block; }
+.order-amount-display__value { font-size:1.35rem; font-weight:700; color:var(--client); font-family:'Cormorant Garamond',serif; display:block; }
+.pay-btn { display:inline-flex; align-items:center; gap:7px; padding:10px 22px; background:var(--client); color:#fff; font-weight:600; font-size:.85rem; border-radius:8px; border:none; cursor:pointer; transition:background .15s,transform .1s,box-shadow .15s; position:relative; overflow:hidden; }
+.pay-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12) 0%,transparent 60%); }
+.pay-btn:hover { background:#4a7de0; box-shadow:0 4px 16px rgba(91,141,238,.4); transform:translateY(-1px); }
+.secure-badge { display:flex; align-items:center; gap:5px; font-size:.7rem; color:var(--text-2); }
+.secure-badge svg { color:#4ecdc4; }
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:1000; display:none; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.active { display:flex; }
+.checkout-modal { background:var(--bg-2); border:1px solid var(--border); border-radius:20px; width:100%; max-width:520px; overflow:hidden; animation:slideUp .25s ease; }
+@keyframes slideUp { from { transform:translateY(20px);opacity:0 } to { transform:none;opacity:1 } }
+.checkout-modal__header { padding:20px 26px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.checkout-modal__title { font-size:1rem; font-weight:600; display:flex; align-items:center; gap:9px; }
+.checkout-modal__title svg { color:var(--client); }
+.modal-close { width:30px; height:30px; border-radius:50%; background:var(--bg-3); border:1px solid var(--border); display:grid; place-items:center; cursor:pointer; color:var(--text-2); transition:background var(--trans); }
+.modal-close:hover { background:var(--border); color:var(--text); }
+.checkout-modal__body { padding:22px 26px; }
+.modal-order-summary { background:var(--bg-3); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:18px; }
+.modal-order-row { display:flex; align-items:center; justify-content:space-between; font-size:.83rem; color:var(--text-2); padding:4px 0; }
+.modal-order-row--total { border-top:1px solid var(--border); margin-top:8px; padding-top:11px; font-size:.95rem; font-weight:700; color:var(--text); }
+.modal-order-row--total span:last-child { color:var(--client); }
+.payment-method-tabs { display:flex; gap:8px; margin-bottom:14px; }
+.pm-tab { flex:1; padding:11px 6px; background:var(--bg-3); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:5px; transition:border-color .15s,background .15s; font-size:.73rem; font-weight:500; color:var(--text-2); }
+.pm-tab.active { border-color:var(--client); background:rgba(91,141,238,.08); color:var(--client); }
+.pm-tab svg { width:20px; height:20px; }
+.card-display { background:linear-gradient(135deg,#1a2744 0%,#0e1827 100%); border-radius:13px; padding:18px 20px; margin-bottom:14px; position:relative; overflow:hidden; border:1px solid rgba(91,141,238,.2); }
+.card-display::before { content:''; position:absolute; width:160px; height:160px; border-radius:50%; background:rgba(91,141,238,.07); top:-50px; right:-30px; }
+.card-chip { width:30px; height:22px; background:linear-gradient(135deg,#d4af37,#f5e06e); border-radius:3px; }
+.card-number-display { font-family:'Courier New',monospace; font-size:1.05rem; letter-spacing:.2em; color:rgba(255,255,255,.8); margin:16px 0 12px; position:relative; z-index:1; }
+.card-info-row { display:flex; gap:28px; position:relative; z-index:1; }
+.card-info-item__label { font-size:.58rem; text-transform:uppercase; letter-spacing:.12em; color:rgba(255,255,255,.4); margin-bottom:2px; }
+.card-info-item__value { font-size:.78rem; font-weight:600; color:rgba(255,255,255,.75); letter-spacing:.05em; }
+.pay-input { width:100%; background:var(--bg-3); border:1.5px solid var(--border); border-radius:9px; padding:11px 14px; color:var(--text); font-size:.86rem; transition:border-color .15s; outline:none; }
+.pay-input:focus { border-color:var(--client); }
+.upi-apps { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.upi-app-btn { display:flex; align-items:center; gap:6px; padding:7px 13px; background:var(--bg-3); border:1px solid var(--border); border-radius:7px; font-size:.76rem; font-weight:500; cursor:pointer; color:var(--text); transition:border-color .15s; }
+.upi-app-btn:hover { border-color:var(--client); }
+.upi-dot { width:20px; height:20px; border-radius:50%; display:grid; place-items:center; font-size:.62rem; font-weight:700; }
+.trust-row { display:flex; align-items:center; justify-content:center; gap:18px; padding:13px 0 2px; border-top:1px solid var(--border); margin-top:18px; flex-wrap:wrap; }
+.trust-item { display:flex; align-items:center; gap:5px; font-size:.67rem; color:var(--text-2); }
+.trust-item svg { color:#4ecdc4; }
+.checkout-modal__footer { padding:16px 26px; border-top:1px solid var(--border); }
+.btn-confirm-pay { width:100%; padding:13px; background:var(--client); color:#fff; font-size:.92rem; font-weight:700; border-radius:9px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:background .15s,box-shadow .15s,transform .1s; position:relative; overflow:hidden; margin-bottom:10px; }
+.btn-confirm-pay::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.1) 0%,transparent 50%); }
+.btn-confirm-pay:hover { background:#4a7de0; box-shadow:0 6px 20px rgba(91,141,238,.35); transform:translateY(-1px); }
+.txn-card { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:14px 18px; display:flex; align-items:center; gap:14px; transition:border-color .15s; margin-bottom:9px; flex-wrap:wrap; }
+.txn-card:hover { border-color:rgba(91,141,238,.3); }
+.txn-card__icon { width:40px; height:40px; border-radius:10px; background:rgba(78,205,196,.1); border:1px solid rgba(78,205,196,.2); display:grid; place-items:center; flex-shrink:0; color:#4ecdc4; }
+.txn-card__info { flex:1; min-width:120px; }
+.txn-card__title { font-size:.87rem; font-weight:600; color:var(--text); margin-bottom:2px; }
+.txn-card__sub { font-size:.72rem; color:var(--text-2); }
+.txn-card__txid { font-family:monospace; font-size:.71rem; color:var(--text-2); background:var(--bg-3); padding:3px 7px; border-radius:5px; border:1px solid var(--border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+.txn-card__amount { font-size:1rem; font-weight:700; color:var(--client); font-family:'Cormorant Garamond',serif; }
+.txn-card__date { font-size:.7rem; color:var(--text-2); text-align:right; }
+.txn-paid-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; background:rgba(78,205,196,.1); color:#4ecdc4; border:1px solid rgba(78,205,196,.25); border-radius:20px; font-size:.67rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }
+.empty-pay { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:52px 20px; text-align:center; gap:10px; background:var(--bg-2); border:1px dashed var(--border); border-radius:var(--radius-lg); }
+.empty-pay__icon { font-size:2.2rem; opacity:.4; }
+.filter-bar { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.filter-input-wrap { flex:1; min-width:180px; position:relative; }
+.filter-input-wrap svg { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--text-2); pointer-events:none; }
+.filter-input { width:100%; background:var(--bg-2); border:1px solid var(--border); border-radius:8px; padding:9px 11px 9px 34px; color:var(--text); font-size:.82rem; outline:none; transition:border-color .15s; }
+.filter-input:focus { border-color:var(--client); }
+.filter-select { background:var(--bg-2); border:1px solid var(--border); border-radius:8px; padding:9px 13px; color:var(--text); font-size:.82rem; outline:none; cursor:pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--client">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    
+<nav class="sidebar__nav">
+
+  <!-- Overview -->
+  <a href="{{ url_for('dashboard') }}"
+     class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" width="18">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    <span>Overview</span>
+  </a>
+
+  <!-- My Bookings -->
+  <a href="{{ url_for('my_bookings') }}"
+     class="nav-item {% if request.endpoint == 'my_bookings' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" width="18">
+      <path d="M8 2v4"/>
+      <path d="M16 2v4"/>
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <path d="M3 10h18"/>
+    </svg>
+    <span>My Bookings</span>
+  </a>
+
+  <!-- Messages -->
+  <a href="{{ url_for('messages') }}"
+     class="nav-item {% if request.endpoint == 'messages' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" width="18">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+
+    <span>Messages</span>
+
+    {% if unread_msgs > 0 %}
+    <span style="
+      background:#ff6b6b;
+      color:#fff;
+      font-size:.65rem;
+      font-weight:700;
+      padding:2px 7px;
+      border-radius:999px;
+      margin-left:auto;">
+      {{ unread_msgs }}
+    </span>
+    {% endif %}
+  </a>
+
+  <!-- Payments -->
+  <a href="{{ url_for('payments') }}"
+     class="nav-item {% if request.endpoint == 'payments' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" width="18">
+      <rect x="2" y="5" width="20" height="14" rx="2"/>
+      <path d="M2 10h20"/>
+    </svg>
+    <span>Payments</span>
+  </a>
+
+  <!-- Profile -->
+  <a href="{{ url_for('client_profile') }}"
+     class="nav-item {% if request.endpoint == 'client_profile' %}nav-item--active{% endif %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.8" width="18">
+      <circle cx="12" cy="7" r="4"/>
+      <path d="M4 21c2-4 6-6 8-6s6 2 8 6"/>
+    </svg>
+    <span>My Profile</span>
+  </a>
+
+</nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--client">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Client</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Manage your spending</p>
+        <h2 class="page-header__title">Payments &amp; Checkout</h2>
+      </div>
+      <div class="secure-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        256-bit SSL Secured
+      </div>
+    </header>
+
+    <!-- Summary Stats -->
+    <!-- FIX: replaced broken Jinja selectattr+sum chain with pre-computed Python variables -->
+    <div class="pay-summary-bar">
+      <div class="pay-stat pay-stat--accent">
+        <span class="pay-stat__label">Total Paid</span>
+        <span class="pay-stat__value">₹{{ "%.2f"|format(total_paid) }}</span>
+        <div class="pay-stat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="44" style="color:var(--client)"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      </div>
+      <div class="pay-stat">
+        <span class="pay-stat__label">Pending Payments</span>
+        <span class="pay-stat__value">{{ pending_count }}</span>
+        <div class="pay-stat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="44" style="color:var(--accent)"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      </div>
+      <div class="pay-stat">
+        <span class="pay-stat__label">Transactions</span>
+        <span class="pay-stat__value">{{ my_payments | length }}</span>
+        <div class="pay-stat__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" width="44" style="color:var(--freelancer)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      </div>
+    </div>
+
+    <!-- Pending Payments -->
+    {% set unpaid = [] %}
+    {% for b in bookings %}{% if not b.payment or b.payment.status != 'paid' %}{% set _ = unpaid.append(b) %}{% endif %}{% endfor %}
+
+    {% if unpaid %}
+    <div class="pay-section-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Awaiting Payment &nbsp;<span style="color:var(--accent);font-weight:700">{{ unpaid|length }} due</span>
+    </div>
+    <div class="pending-cards">
+      {% for booking in unpaid %}
+      <div class="order-card">
+        <div class="order-card__header">
+          <div class="order-card__meta">
+            <div class="order-meta-item">
+              <span class="order-meta-item__label">Booking ID</span>
+              <span class="order-meta-item__value" style="font-family:monospace">#BK{{ '%04d'|format(booking.id) }}</span>
+            </div>
+            <div class="order-meta-item">
+              <span class="order-meta-item__label">Booked On</span>
+              <span class="order-meta-item__value">{{ booking.created_at.strftime('%d %b %Y') }}</span>
+            </div>
+            <div class="order-meta-item">
+              <span class="order-meta-item__label">Amount Due</span>
+              <span class="order-meta-item__value" style="color:var(--client);font-weight:700">₹{{ "%.2f"|format(booking.amount) }}</span>
+            </div>
+          </div>
+          <span class="order-status-tag order-status-tag--{{ booking.status }}">{{ booking.status }}</span>
+        </div>
+        <div class="order-card__body">
+          <div class="order-service-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="21"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <div class="order-service-info">
+            <div class="order-service-info__title">{{ booking.service.title }}</div>
+            <div class="order-service-info__sub">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="11"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Awaiting payment to start
+            </div>
+          </div>
+          <div class="order-freelancer-chip">
+            <div class="order-freelancer-chip__avatar">{{ booking.freelancer.username[0].upper() }}</div>
+            <div>
+              <div style="font-size:.62rem;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Freelancer</div>
+              <div style="font-size:.8rem;font-weight:500;color:var(--text)">{{ booking.freelancer.full_name }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="order-card__actions">
+          <div>
+            <span class="order-amount-display__label">Total Amount</span>
+            <span class="order-amount-display__value">₹{{ "%.2f"|format(booking.amount) }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div class="secure-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Secure Payment
+            </div>
+            <button class="pay-btn" onclick="openCheckout({{ booking.id }}, '{{ booking.service.title | e }}', {{ booking.amount }}, '{{ booking.freelancer.full_name | e }}', '{{ url_for('pay_booking', booking_id=booking.id) }}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              Pay ₹{{ "%.2f"|format(booking.amount) }}
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Payment History -->
+    <div class="pay-section-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Transaction History
+    </div>
+
+    {% if my_payments %}
+    <div class="filter-bar">
+      <div class="filter-input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="filter-input" id="txnSearch" placeholder="Search by service, freelancer or transaction ID…" oninput="filterTxns()">
+      </div>
+      <select class="filter-select" id="txnSort" onchange="filterTxns()">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="highest">Highest Amount</option>
+        <option value="lowest">Lowest Amount</option>
+      </select>
+    </div>
+    <div id="txnList">
+      {% for payment in my_payments %}
+      <div class="txn-card" data-service="{{ payment.booking.service.title }}" data-freelancer="{{ payment.freelancer.full_name }}" data-txid="{{ payment.transaction_id or '' }}" data-amount="{{ payment.amount }}" data-date="{{ payment.paid_at.strftime('%Y%m%d%H%M') if payment.paid_at else '0' }}">
+        <div class="txn-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="txn-card__info">
+          <div class="txn-card__title">{{ payment.booking.service.title }}</div>
+          <div class="txn-card__sub" style="display:flex;align-items:center;gap:5px;margin-top:2px">
+            <div class="avatar avatar--freelancer avatar--xs">{{ payment.freelancer.username[0].upper() }}</div>
+            {{ payment.freelancer.full_name }}
+          </div>
+        </div>
+        <div class="txn-card__txid" title="{{ payment.transaction_id or '—' }}">{{ payment.transaction_id or '—' }}</div>
+        <div style="text-align:right">
+          <div class="txn-card__amount">₹{{ "%.2f"|format(payment.amount) }}</div>
+          <div class="txn-card__date">{{ payment.paid_at.strftime('%d %b %Y, %H:%M') if payment.paid_at else '—' }}</div>
+        </div>
+        <span class="txn-paid-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9"><polyline points="20 6 9 17 4 12"/></svg>
+          Paid
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-pay">
+      <div class="empty-pay__icon">💳</div>
+      <h3 style="font-size:.9rem;font-weight:600">No transactions yet</h3>
+      <p style="font-size:.8rem;color:var(--text-2)">Complete a payment and your transactions will appear here.</p>
+    </div>
+    {% endif %}
+  </main>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="checkout-modal">
+    <div class="checkout-modal__header">
+      <div class="checkout-modal__title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Secure Checkout
+      </div>
+      <button class="modal-close" onclick="closeCheckout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="checkout-modal__body">
+      <div class="modal-order-summary">
+        <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-2);margin-bottom:10px">Order Summary</div>
+        <div class="modal-order-row"><span>Service</span><span id="modal-service" style="color:var(--text);font-weight:500;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span></div>
+        <div class="modal-order-row"><span>Freelancer</span><span id="modal-freelancer" style="color:var(--text);font-weight:500">—</span></div>
+        <div class="modal-order-row"><span>Platform Fee</span><span style="color:#4ecdc4">₹0.00</span></div>
+        <div class="modal-order-row modal-order-row--total"><span>Total Due</span><span id="modal-total">₹0.00</span></div>
+      </div>
+
+      <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-2);margin-bottom:10px">Payment Method</div>
+      <div class="payment-method-tabs">
+        <button class="pm-tab active" onclick="switchPM('card',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Card
+        </button>
+        <button class="pm-tab" onclick="switchPM('upi',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>UPI
+        </button>
+        <button class="pm-tab" onclick="switchPM('nb',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Net Banking
+        </button>
+      </div>
+
+      <div id="pm-card">
+        <div class="card-display">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="card-chip"></div>
+            <svg viewBox="0 0 50 30" width="44" fill="none"><circle cx="18" cy="15" r="13" fill="rgba(255,255,255,.22)"/><circle cx="32" cy="15" r="13" fill="rgba(255,255,255,.13)"/></svg>
+          </div>
+          <div class="card-number-display">•••• •••• •••• 4242</div>
+          <div class="card-info-row">
+            <div><div class="card-info-item__label">Card Holder</div><div class="card-info-item__value">{{ current_user.full_name or current_user.username }}</div></div>
+            <div><div class="card-info-item__label">Expires</div><div class="card-info-item__value">12/27</div></div>
+          </div>
+        </div>
+        <div style="display:grid;gap:9px">
+          <input type="text" class="pay-input" placeholder="Card Number" maxlength="19" oninput="fmtCard(this)" style="letter-spacing:.1em">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <input type="text" class="pay-input" placeholder="MM / YY" maxlength="7">
+            <input type="password" class="pay-input" placeholder="CVV" maxlength="3">
+          </div>
+        </div>
+      </div>
+
+      <div id="pm-upi" style="display:none">
+        <div style="display:flex;gap:9px">
+          <input type="text" class="pay-input" placeholder="Enter UPI ID (e.g. name@upi)" style="flex:1">
+          <button class="pay-btn" style="padding:10px 16px;white-space:nowrap">Verify</button>
+        </div>
+        <div class="upi-apps">
+          <button class="upi-app-btn"><div class="upi-dot" style="background:#4f46e5;color:#fff">G</div> Google Pay</button>
+          <button class="upi-app-btn"><div class="upi-dot" style="background:#00baf2;color:#fff">P</div> PhonePe</button>
+          <button class="upi-app-btn"><div class="upi-dot" style="background:#f97316;color:#fff">P</div> Paytm</button>
+          <button class="upi-app-btn"><div class="upi-dot" style="background:#0070ba;color:#fff">B</div> BHIM</button>
+        </div>
+      </div>
+
+      <div id="pm-nb" style="display:none">
+        <select class="pay-input" style="cursor:pointer;width:100%">
+          <option value="">— Select Your Bank —</option>
+          <option>State Bank of India</option><option>HDFC Bank</option><option>ICICI Bank</option>
+          <option>Axis Bank</option><option>Kotak Mahindra Bank</option><option>Punjab National Bank</option>
+          <option>Bank of Baroda</option><option>Canara Bank</option>
+        </select>
+        <p style="font-size:.73rem;color:var(--text-2);margin-top:10px">You will be redirected to your bank's secure portal to complete the payment.</p>
+      </div>
+
+      <div class="trust-row">
+        <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>SSL Secured</div>
+        <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12"><polyline points="20 6 9 17 4 12"/></svg>PCI Compliant</div>
+        <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>24/7 Support</div>
+      </div>
+    </div>
+
+    <div class="checkout-modal__footer">
+      <form id="payForm" method="POST">
+        <button type="submit" class="btn-confirm-pay">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Confirm &amp; Pay <span id="modal-btn-amt" style="opacity:.75;font-weight:400;margin-left:4px"></span>
+        </button>
+      </form>
+      <p style="text-align:center;font-size:.68rem;color:var(--text-2);margin-top:8px">By paying you agree to WorkSphere's payment terms. This transaction is encrypted &amp; protected.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function openCheckout(id,service,amount,freelancer,url){
+  document.getElementById('modal-service').textContent=service;
+  document.getElementById('modal-freelancer').textContent=freelancer;
+  document.getElementById('modal-total').textContent='₹'+amount.toFixed(2);
+  document.getElementById('modal-btn-amt').textContent='— ₹'+amount.toFixed(2);
+  document.getElementById('payForm').action=url;
+  document.getElementById('checkoutModal').classList.add('active');
+  document.body.style.overflow='hidden';
+}
+function closeCheckout(){
+  document.getElementById('checkoutModal').classList.remove('active');
+  document.body.style.overflow='';
+}
+document.getElementById('checkoutModal').addEventListener('click',function(e){if(e.target===this)closeCheckout();});
+function switchPM(type,btn){
+  document.querySelectorAll('.pm-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['card','upi','nb'].forEach(t=>{document.getElementById('pm-'+t).style.display=t===type?'':'none';});
+}
+function fmtCard(el){let v=el.value.replace(/\D/g,'').substring(0,16);el.value=v.replace(/(.{4})/g,'$1 ').trim();}
+function filterTxns(){
+  const q=document.getElementById('txnSearch').value.toLowerCase();
+  const s=document.getElementById('txnSort').value;
+  const cards=Array.from(document.querySelectorAll('#txnList .txn-card'));
+  cards.forEach(c=>{const t=(c.dataset.service+c.dataset.freelancer+c.dataset.txid).toLowerCase();c.style.display=t.includes(q)?'':'none';});
+  const list=document.getElementById('txnList');
+  const vis=cards.filter(c=>c.style.display!=='none');
+  vis.sort((a,b)=>{
+    if(s==='newest')return b.dataset.date.localeCompare(a.dataset.date);
+    if(s==='oldest')return a.dataset.date.localeCompare(b.dataset.date);
+    if(s==='highest')return parseFloat(b.dataset.amount)-parseFloat(a.dataset.amount);
+    return parseFloat(a.dataset.amount)-parseFloat(b.dataset.amount);
+  });
+  vis.forEach(c=>list.appendChild(c));
+}
+</script>
+{% endblock %}

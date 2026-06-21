@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Add Proposal — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar sidebar--freelancer">
+    <div class="sidebar__brand">
+      <div class="brand__mark brand__mark--sm">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <nav class="sidebar__nav">
+
+      <a href="{{ url_for('dashboard') }}"
+        class="nav-item {% if request.endpoint == 'dashboard' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
+        <span>Overview</span>
+      </a>
+
+      <a href="{{ url_for('add_service') }}"
+        class="nav-item {% if request.endpoint == 'add_service' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+        <span>Add Proposal</span>
+      </a>
+
+      <a href="{{ url_for('booking_requests') }}"
+        class="nav-item {% if request.endpoint == 'booking_requests' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+        </svg>
+        <span>Booking Requests</span>
+      </a>
+
+      <a href="{{ url_for('messages') }}"
+        class="nav-item {% if request.endpoint == 'messages' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        <span>Messages</span>
+
+        {% if unread_msgs > 0 %}
+        <span style="background:var(--admin);color:#fff;font-size:.6rem;
+      font-weight:700;padding:1px 5px;border-radius:999px;margin-left:4px">
+          {{ unread_msgs }}
+        </span>
+        {% endif %}
+      </a>
+
+      <a href="{{ url_for('payments') }}"
+        class="nav-item {% if request.endpoint == 'payments' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+        <span>Earnings</span>
+      </a>
+
+      <a href="{{ url_for('freelancer_profile') }}"
+        class="nav-item {% if request.endpoint == 'freelancer_profile' %}nav-item--active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c2-4 6-6 8-6s6 2 8 6" />
+        </svg>
+        <span>My Profile</span>
+      </a>
+
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="avatar avatar--freelancer">{{ current_user.username[0].upper() }}</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name">{{ current_user.username }}</span>
+          <span class="sidebar__user-role">Freelancer</span>
+        </div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="page-header__left">
+        <p class="page-header__greeting">Offer your skills</p>
+        <h2 class="page-header__title">Add Proposal</h2>
+      </div>
+    </header>
+
+    <div class="form-page-card">
+      <form method="POST" action="{{ url_for('add_service') }}" class="form" novalidate>
+        <div class="field">
+          <label class="field__label" for="title">Service Title</label>
+          <div class="field__wrap">
+            <input class="field__input" type="text" id="title" name="title"
+              placeholder="e.g. Full Stack Web Development" required />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="category">Category</label>
+          <div class="field__wrap">
+            <input class="field__input" type="text" id="category" name="category"
+              placeholder="e.g. Web Development, Design, Writing…" required />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="price">Price (INR)</label>
+          <div class="field__wrap">
+            <input class="field__input" type="number" id="price" name="price" placeholder="e.g. 1500" min="1"
+              step="0.01" required />
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="description">Description</label>
+          <div class="field__wrap">
+            <textarea class="field__input field__textarea" id="description" name="description"
+              placeholder="Describe what you offer, your experience, and what clients can expect…" required></textarea>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+          <a href="{{ url_for('dashboard') }}" class="btn btn--outline">Cancel</a>
+          <button type="submit" class="btn btn--primary">
+            <span>Post Proposal</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}

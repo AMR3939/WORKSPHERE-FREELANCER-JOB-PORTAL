@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Register — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="auth-layout">
+
+  <!-- Left panel -->
+  <div class="auth-panel auth-panel--brand">
+    <div class="brand">
+      <div class="brand__mark">W</div>
+      <span class="brand__name">WorkSphere</span>
+    </div>
+    <div class="brand__tagline">
+      <p>Join thousands of<br>clients & freelancers.</p>
+    </div>
+    <div class="brand__orb brand__orb--1"></div>
+    <div class="brand__orb brand__orb--2"></div>
+  </div>
+
+  <!-- Right panel (form) -->
+  <div class="auth-panel auth-panel--form">
+    <div class="form-card form-card--register">
+      <div class="form-card__header">
+        <h1 class="form-card__title">Create account</h1>
+        <p class="form-card__sub">Tell us a bit about yourself</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('register') }}" class="form" id="registerForm" novalidate>
+
+        <div class="field">
+          <label class="field__label" for="full_name">Full Name</label>
+          <div class="field__wrap">
+            <input class="field__input" type="text" id="full_name" name="full_name"
+              placeholder="John Doe" autocomplete="name" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="username">Username</label>
+          <div class="field__wrap">
+            <input class="field__input" type="text" id="username" name="username"
+              placeholder="johndoe" autocomplete="username" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="email">Email Address</label>
+          <div class="field__wrap">
+            <input class="field__input" type="email" id="email" name="email"
+              placeholder="john@example.com" autocomplete="email" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label">I am joining as</label>
+          <div class="role-group">
+            <label class="role-card">
+              <input type="radio" name="role" value="client" checked />
+              <div class="role-card__inner">
+                <div class="role-card__icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="22"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <span class="role-card__label">Client</span>
+                <span class="role-card__desc">I want to hire talent</span>
+              </div>
+            </label>
+            <label class="role-card">
+              <input type="radio" name="role" value="freelancer" />
+              <div class="role-card__inner">
+                <div class="role-card__icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="22"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                </div>
+                <span class="role-card__label">Freelancer</span>
+                <span class="role-card__desc">I want to find work</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="reg_password">Password</label>
+          <div class="field__wrap field__wrap--pw">
+            <input class="field__input" type="password" id="reg_password" name="password"
+              placeholder="Minimum 6 characters" autocomplete="new-password" required />
+            <button type="button" class="pw-toggle" data-target="reg_password" aria-label="Toggle password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="confirm">Confirm Password</label>
+          <div class="field__wrap field__wrap--pw">
+            <input class="field__input" type="password" id="confirm" name="confirm"
+              placeholder="Repeat your password" autocomplete="new-password" required />
+            <button type="button" class="pw-toggle" data-target="confirm" aria-label="Toggle confirm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full">
+          <span>Create Account</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+
+      <p class="form-card__footer">
+        Already have an account?
+        <a href="{{ url_for('login') }}" class="link">Sign in</a>
+      </p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
